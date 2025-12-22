@@ -15,19 +15,41 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const businessId = searchParams.get('businessId');
+    const verificationId = searchParams.get('verificationId');
 
-    if (!businessId) {
+    let business;
+    let verification;
+
+    if (verificationId) {
+      // Fetch by verification ID
+      verification = await Verification.findOne({ verificationId });
+      if (!verification) {
+        return NextResponse.json(
+          { error: 'Verification not found' },
+          { status: 404 }
+        );
+      }
+      business = await Business.findById(verification.businessId);
+      if (!business) {
+        return NextResponse.json(
+          { error: 'Business not found' },
+          { status: 404 }
+        );
+      }
+    } else if (businessId) {
+      // Fetch by business ID
+      business = await Business.findById(businessId);
+      if (!business) {
+        return NextResponse.json(
+          { error: 'Business not found' },
+          { status: 404 }
+        );
+      }
+      verification = await Verification.findOne({ businessId });
+    } else {
       return NextResponse.json(
-        { error: 'Business ID is required' },
+        { error: 'Business ID or Verification ID is required' },
         { status: 400 }
-      );
-    }
-
-    const business = await Business.findById(businessId);
-    if (!business) {
-      return NextResponse.json(
-        { error: 'Business not found' },
-        { status: 404 }
       );
     }
 
@@ -35,8 +57,6 @@ export async function GET(request: NextRequest) {
     if (business.ownerId.toString() !== auth.userId && auth.role !== 'ADMIN' && auth.role !== 'TRUST_TEAM') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-
-    const verification = await Verification.findOne({ businessId });
 
     const response: any = {
       status: business.verificationStatus,
@@ -50,6 +70,18 @@ export async function GET(request: NextRequest) {
     if (verification) {
       response.verificationId = verification.verificationId;
       response.verificationStatus = verification.status;
+      response.verification = {
+        verificationId: verification.verificationId,
+        status: verification.status,
+        classification: verification.classification,
+        nationalIdSecureLink: verification.nationalIdSecureLink,
+        identityDocumentType: verification.identityDocumentType,
+        registrationDocSecureLink: verification.registrationDocSecureLink,
+        businessBankName: verification.businessBankName,
+        phoneVerified: verification.phoneVerified,
+        progressPercent: verification.progressPercent,
+        nextStep: verification.nextStep,
+      };
     }
 
     return NextResponse.json(response);

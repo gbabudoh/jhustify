@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Search, User, Menu, X, LogOut, LayoutDashboard, ShieldCheck, ChevronDown } from 'lucide-react';
+import { Search, User, Menu, X, LogOut, LogIn, LayoutDashboard, ShieldCheck, ChevronDown, Globe, Bell, Settings, HelpCircle, CreditCard, Briefcase, Home, Star, TrendingUp, Users, MessageSquare, ArrowRight, Zap, Shield, Award, Building, CheckCircle } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import Button from './ui/Button';
 
@@ -14,7 +14,10 @@ export default function Header() {
   const [userName, setUserName] = useState<string>('');
   const [userRole, setUserRole] = useState<string>('');
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Check if user is logged in
@@ -65,14 +68,24 @@ export default function Header() {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
       }
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+
+    // Handle scroll for header effects
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('scroll', handleScroll);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('auth-change', handleAuthChange);
       document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll);
     };
   }, [pathname]); // Re-check when route changes
 
@@ -96,44 +109,67 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-[#D6D9DD] shadow-sm">
+    <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md border-b border-[#D6D9DD] shadow-lg' : 'bg-white border-b border-[#D69DD] shadow-sm'}`}>
       <nav className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#C2EABD] to-[#D9F8D4] flex items-center justify-center">
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#C2EABD] to-[#D9F8D4] flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-md">
               <span className="text-[#465362] font-bold text-xl">J</span>
             </div>
-            <span className="text-xl font-bold text-[#465362]">Jhustify</span>
+            <span className="text-xl font-bold text-[#465362] transition-colors duration-300 group-hover:text-[#5A6774]">Jhustify</span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-8">
             <Link
-              href="/search"
-              className={`text-sm font-medium transition-colors ${
-                isActive('/search') ? 'text-[#465362]' : 'text-gray-600 hover:text-[#465362]'
+              href="/"
+              className={`flex items-center gap-2 text-sm font-medium transition-all duration-300 px-3 py-2 rounded-lg hover:bg-[#F5F5F5] ${
+                isActive('/') ? 'text-[#465362] bg-[#F5F5F5]' : 'text-gray-600 hover:text-[#465362]'
               }`}
             >
-              Search Businesses
+              <Home size={18} />
+              <span>Home</span>
+            </Link>
+            <Link
+              href="/search"
+              className={`flex items-center gap-2 text-sm font-medium transition-all duration-300 px-3 py-2 rounded-lg hover:bg-[#F5F5F5] ${
+                isActive('/search') ? 'text-[#465362] bg-[#F5F5F5]' : 'text-gray-600 hover:text-[#465362]'
+              }`}
+            >
+              <Search size={18} />
+              <span>Search Businesses</span>
             </Link>
             {isLoggedIn && (
               <>
-                <Link
-                  href="/verify"
-                  className={`text-sm font-medium transition-colors ${
-                    isActive('/verify') ? 'text-[#465362]' : 'text-gray-600 hover:text-[#465362]'
-                  }`}
-                >
-                  Get Verified
-                </Link>
+                {userRole === 'BUSINESS_OWNER' && (
+                  <Link
+                    href="/verify"
+                    className={`flex items-center gap-2 text-sm font-medium transition-all duration-300 px-3 py-2 rounded-lg hover:bg-[#F5F5F5] ${
+                      isActive('/verify') ? 'text-[#465362] bg-[#F5F5F5]' : 'text-gray-600 hover:text-[#465362]'
+                    }`}
+                  >
+                    <ShieldCheck size={18} />
+                    <span>Get Verified</span>
+                  </Link>
+                )}
                 <Link
                   href="/dashboard"
-                  className={`text-sm font-medium transition-colors ${
-                    isActive('/dashboard') ? 'text-[#465362]' : 'text-gray-600 hover:text-[#465362]'
+                  className={`flex items-center gap-2 text-sm font-medium transition-all duration-300 px-3 py-2 rounded-lg hover:bg-[#F5F5F5] ${
+                    isActive('/dashboard') ? 'text-[#465362] bg-[#F5F5F5]' : 'text-gray-600 hover:text-[#465362]'
                   }`}
                 >
-                  Dashboard
+                  <LayoutDashboard size={18} />
+                  <span>Dashboard</span>
+                </Link>
+                <Link
+                  href="/messages"
+                  className={`flex items-center gap-2 text-sm font-medium transition-all duration-300 px-3 py-2 rounded-lg hover:bg-[#F5F5F5] ${
+                    isActive('/messages') ? 'text-[#465362] bg-[#F5F5F5]' : 'text-gray-600 hover:text-[#465362]'
+                  }`}
+                >
+                  <MessageSquare size={18} />
+                  <span>Messages</span>
                 </Link>
               </>
             )}
@@ -141,80 +177,174 @@ export default function Header() {
               <>
                 <Link
                   href="/register"
-                  className={`text-sm font-medium transition-colors ${
-                    isActive('/register') ? 'text-[#465362]' : 'text-gray-600 hover:text-[#465362]'
+                  className={`flex items-center gap-2 text-sm font-medium transition-all duration-300 px-3 py-2 rounded-lg hover:bg-[#F5F5F5] ${
+                    isActive('/register') ? 'text-[#465362] bg-[#F5F5F5]' : 'text-gray-600 hover:text-[#465362]'
                   }`}
                 >
-                  Create Account
+                  <User size={18} />
+                  <span>Create Account</span>
                 </Link>
-                <Button variant="primary" size="sm" asChild>
-                  <Link href="/login">Sign In</Link>
+                <Button variant="primary" size="sm" className="bg-gradient-to-r from-[#465362] to-[#6B7280] hover:from-[#5A6774] hover:to-[#7A8289] transition-all duration-300 transform hover:scale-105" asChild>
+                  <Link href="/login" className="flex items-center gap-2">
+                    <LogIn size={16} />
+                    Sign In
+                  </Link>
                 </Button>
               </>
             ) : (
-              <div className="relative" ref={userMenuRef}>
+              <div className="flex items-center gap-3">
+                {/* Notifications */}
+                <div className="relative" ref={notificationRef}>
+                  <button
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className="relative p-2 rounded-lg hover:bg-[#F5F5F5] transition-all duration-300 transform hover:scale-105"
+                  >
+                    <Bell className="text-gray-600" size={20} />
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                  </button>
+                  
+                  {showNotifications && (
+                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-[#D6D9DD] py-2 z-50">
+                      <div className="px-4 py-3 border-b border-[#D6D9DD]">
+                        <h3 className="font-semibold text-[#465362] flex items-center gap-2">
+                          <Bell size={18} />
+                          Notifications
+                        </h3>
+                      </div>
+                      <div className="max-h-96 overflow-y-auto">
+                        <div className="px-4 py-3 hover:bg-[#F5F5F5] transition-colors cursor-pointer">
+                          <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                              <CheckCircle className="text-green-600" size={16} />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-[#465362]">Welcome to Jhustify!</p>
+                              <p className="text-xs text-gray-600 mt-1">Get started by verifying your business</p>
+                              <p className="text-xs text-gray-500 mt-1">2 hours ago</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="px-4 py-3 hover:bg-[#F5F5F5] transition-colors cursor-pointer">
+                          <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                              <TrendingUp className="text-blue-600" size={16} />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-[#465362]">New feature available</p>
+                              <p className="text-xs text-gray-600 mt-1">Check out our enhanced dashboard</p>
+                              <p className="text-xs text-gray-500 mt-1">1 day ago</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="px-4 py-3 border-t border-[#D6D9DD]">
+                        <Button variant="outline" size="sm" className="w-full">
+                          View all notifications
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* User Menu */}
+                <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#F5F5F5] transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#F5F5F5] transition-all duration-300 transform hover:scale-105"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C2EABD] to-[#D9F8D4] flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C2EABD] to-[#D9F8D4] flex items-center justify-center shadow-md">
                     <User size={18} className="text-[#465362]" />
                   </div>
                   <div className="text-left">
                     <p className="text-sm font-medium text-[#465362]">{userName}</p>
                     <p className="text-xs text-gray-500">{getRoleBadge()}</p>
                   </div>
-                  <ChevronDown size={16} className={`text-gray-600 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={16} className={`text-gray-600 transition-transform duration-300 ${showUserMenu ? 'rotate-180' : ''}`} />
                 </button>
 
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-[#D6D9DD] py-2 z-50">
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-[#D6D9DD] py-2 z-50">
+                    <div className="px-4 py-3 border-b border-[#D6D9DD]">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#C2EABD] to-[#D9F8D4] flex items-center justify-center">
+                          <User size={20} className="text-[#465362]" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-[#465362]">{userName}</p>
+                          <p className="text-xs text-gray-500">{getRoleBadge()}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
                     <Link
                       href="/dashboard"
                       onClick={() => setShowUserMenu(false)}
-                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F5F5] transition-colors"
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F5F5] transition-all duration-200"
                     >
-                      <LayoutDashboard size={18} />
-                      Dashboard
+                      <LayoutDashboard size={18} className="text-gray-500" />
+                      <span>Dashboard</span>
+                      <ArrowRight size={14} className="ml-auto text-gray-400" />
                     </Link>
                     <Link
-                      href="/verify"
+                      href="/messages"
                       onClick={() => setShowUserMenu(false)}
-                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F5F5] transition-colors"
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F5F5] transition-all duration-200"
                     >
-                      <ShieldCheck size={18} />
-                      Get Verified
+                      <MessageSquare size={18} className="text-gray-500" />
+                      <span>Messages</span>
+                      <ArrowRight size={14} className="ml-auto text-gray-400" />
+                    </Link>
+                    {userRole === 'BUSINESS_OWNER' && (
+                      <Link
+                        href="/verify"
+                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F5F5] transition-all duration-200"
+                      >
+                        <ShieldCheck size={18} className="text-gray-500" />
+                        <span>Get Verified</span>
+                        <ArrowRight size={14} className="ml-auto text-gray-400" />
+                      </Link>
+                    )}
+                    <Link
+                      href="/settings"
+                      onClick={() => setShowUserMenu(false)}
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F5F5] transition-all duration-200"
+                    >
+                      <Settings size={18} className="text-gray-500" />
+                      <span>Settings</span>
+                      <ArrowRight size={14} className="ml-auto text-gray-400" />
                     </Link>
                     <div className="border-t border-[#D6D9DD] my-2"></div>
                     <button
                       onClick={handleLogout}
-                      className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left"
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-all duration-200 w-full text-left cursor-pointer"
                     >
                       <LogOut size={18} />
-                      Sign Out
+                      <span>Sign Out</span>
                     </button>
                   </div>
                 )}
+                </div>
               </div>
             )}
           </div>
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2"
+            className="md:hidden p-2 rounded-lg hover:bg-[#F5F5F5] transition-all duration-300 transform hover:scale-105"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            {mobileMenuOpen ? <X size={24} className="text-[#465362]" /> : <Menu size={24} className="text-[#465362]" />}
           </button>
         </div>
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden mt-4 pb-4 space-y-3 border-t border-[#D6D9DD] pt-4">
+          <div className="md:hidden mt-4 pb-4 space-y-2 border-t border-[#D6D9DD] pt-4 animate-in slide-in-from-top duration-300">
             {isLoggedIn && (
-              <div className="px-4 py-3 bg-[#F5F5F5] rounded-lg mb-3">
+              <div className="px-4 py-3 bg-gradient-to-r from-[#F5F5F5] to-[#E8E8E8] rounded-lg mb-3 shadow-sm">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#C2EABD] to-[#D9F8D4] flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#C2EABD] to-[#D9F8D4] flex items-center justify-center shadow-md">
                     <User size={20} className="text-[#465362]" />
                   </div>
                   <div>
@@ -225,48 +355,73 @@ export default function Header() {
               </div>
             )}
             <Link
-              href="/search"
-              className="block py-2 text-sm font-medium text-gray-600 hover:text-[#465362]"
+              href="/"
+              className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:text-[#465362] hover:bg-[#F5F5F5] transition-all duration-200 rounded-lg"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Search Businesses
+              <Home size={20} />
+              <span>Home</span>
+            </Link>
+            <Link
+              href="/search"
+              className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:text-[#465362] hover:bg-[#F5F5F5] transition-all duration-200 rounded-lg"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Search size={20} />
+              <span>Search Businesses</span>
             </Link>
             {isLoggedIn ? (
               <>
-                <Link
-                  href="/verify"
-                  className="block py-2 text-sm font-medium text-gray-600 hover:text-[#465362]"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Get Verified
-                </Link>
+                {userRole === 'BUSINESS_OWNER' && (
+                  <Link
+                    href="/verify"
+                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:text-[#465362] hover:bg-[#F5F5F5] transition-all duration-200 rounded-lg"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <ShieldCheck size={20} />
+                    <span>Get Verified</span>
+                  </Link>
+                )}
                 <Link
                   href="/dashboard"
-                  className="block py-2 text-sm font-medium text-gray-600 hover:text-[#465362]"
+                  className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:text-[#465362] hover:bg-[#F5F5F5] transition-all duration-200 rounded-lg"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Dashboard
+                  <LayoutDashboard size={20} />
+                  <span>Dashboard</span>
+                </Link>
+                <Link
+                  href="/messages"
+                  className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:text-[#465362] hover:bg-[#F5F5F5] transition-all duration-200 rounded-lg"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <MessageSquare size={20} />
+                  <span>Messages</span>
                 </Link>
                 <div className="border-t border-[#D6D9DD] my-2"></div>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-2 py-2 text-sm font-medium text-red-600 hover:text-red-700 w-full text-left"
+                  className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200 rounded-lg w-full text-left cursor-pointer"
                 >
-                  <LogOut size={18} />
-                  Sign Out
+                  <LogOut size={20} />
+                  <span>Sign Out</span>
                 </button>
               </>
             ) : (
               <>
                 <Link
                   href="/register"
-                  className="block py-2 text-sm font-medium text-gray-600 hover:text-[#465362]"
+                  className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:text-[#465362] hover:bg-[#F5F5F5] transition-all duration-200 rounded-lg"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Create Account
+                  <User size={20} />
+                  <span>Create Account</span>
                 </Link>
-                <Button variant="primary" size="sm" className="w-full mt-2" asChild>
-                  <Link href="/login" onClick={() => setMobileMenuOpen(false)}>Sign In</Link>
+                <Button variant="primary" size="sm" className="w-full mt-3 bg-gradient-to-r from-[#465362] to-[#6B7280] hover:from-[#5A6774] hover:to-[#7A8289] transition-all duration-300 transform hover:scale-105" asChild>
+                  <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center gap-2">
+                    <LogIn size={16} />
+                    Sign In
+                  </Link>
                 </Button>
               </>
             )}

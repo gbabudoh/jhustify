@@ -17,8 +17,12 @@ export interface IBusiness extends Document {
   verificationStatus: 'UNVERIFIED' | 'SUBMITTED' | 'IN_REVIEW' | 'VERIFIED' | 'SUSPENDED' | 'REJECTED';
   verificationTier: 'BASIC' | 'VERIFIED' | 'PREMIUM';
   trustBadgeActive: boolean;
-  trustBadgeType?: 'BASIC' | 'GOLD';
+  trustBadgeType?: 'INFORMAL' | 'FORMAL' | 'VERIFIED';
+  businessRepresentativePhoto?: string;
+  mobileVerified: boolean;
   verificationId?: string;
+  averageRating?: number;
+  ratingCount?: number;
   createdAt: Date;
   updatedAt: Date;
   ownerId: mongoose.Types.ObjectId;
@@ -85,12 +89,29 @@ const BusinessSchema = new Schema<IBusiness>(
     },
     trustBadgeType: {
       type: String,
-      enum: ['BASIC', 'GOLD'],
+      enum: ['INFORMAL', 'FORMAL', 'VERIFIED'],
+    },
+    businessRepresentativePhoto: {
+      type: String,
+    },
+    mobileVerified: {
+      type: Boolean,
+      default: false,
     },
     verificationId: {
       type: String,
       unique: true,
       sparse: true,
+    },
+    averageRating: {
+      type: Number,
+      min: 0,
+      max: 5,
+      default: 0,
+    },
+    ratingCount: {
+      type: Number,
+      default: 0,
     },
     ownerId: {
       type: Schema.Types.ObjectId,

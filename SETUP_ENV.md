@@ -32,6 +32,17 @@ Or use an online generator: https://generate-secret.vercel.app/32
 - Leave empty for relative URLs (recommended for development)
 - Set to your API domain for production: `https://api.yourdomain.com`
 
+#### OneSignal SMS Verification (Optional)
+Required for phone number verification:
+
+```
+ONESIGNAL_APP_ID=your-app-id-here
+ONESIGNAL_REST_API_KEY=your-rest-api-key-here
+ONESIGNAL_SMS_FROM_NUMBER=Jhustify
+```
+
+**Note:** OneSignal SMS requires a paid plan. See `ONESIGNAL_SETUP.md` for setup instructions.
+
 ## Example .env.local File
 
 ```env
@@ -43,6 +54,11 @@ JWT_SECRET=SALEnmKLhfnj8pYHEx4cDgO7zoJ2IDc110Bm+FLILD4=
 
 # API URL (leave empty for development)
 NEXT_PUBLIC_API_URL=
+
+# OneSignal SMS Verification (Optional - see ONESIGNAL_SETUP.md)
+ONESIGNAL_APP_ID=
+ONESIGNAL_REST_API_KEY=
+ONESIGNAL_SMS_FROM_NUMBER=Jhustify
 ```
 
 ## MongoDB Setup Options

@@ -1,14 +1,14 @@
 'use client';
 
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Building2, Store } from 'lucide-react';
 
 interface TrustBadgeProps {
-  type?: 'BASIC' | 'GOLD';
+  type?: 'INFORMAL' | 'FORMAL' | 'VERIFIED';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
-export default function TrustBadge({ type = 'BASIC', size = 'md', className = '' }: TrustBadgeProps) {
+export default function TrustBadge({ type = 'INFORMAL', size = 'md', className = '' }: TrustBadgeProps) {
   const sizeClasses = {
     sm: 'text-xs px-2 py-1',
     md: 'text-sm px-3 py-1.5',
@@ -21,20 +21,42 @@ export default function TrustBadge({ type = 'BASIC', size = 'md', className = ''
     lg: 22,
   };
 
-  const isGold = type === 'GOLD';
+  const badgeConfig = {
+    INFORMAL: {
+      bg: 'bg-blue-100 text-blue-800 border border-blue-300',
+      icon: Store,
+      label: 'Informal',
+      title: 'Informal Business - Unregistered',
+    },
+    FORMAL: {
+      bg: 'bg-green-100 text-green-800 border border-green-300',
+      icon: Building2,
+      label: 'Formal',
+      title: 'Formal Business - Registered',
+    },
+    VERIFIED: {
+      bg: 'bg-gradient-to-r from-yellow-100 to-amber-100 text-amber-800 border border-amber-300',
+      icon: CheckCircle2,
+      label: 'Verified',
+      title: 'Verified Business - Fully Verified',
+    },
+  };
+
+  const config = badgeConfig[type];
+  const IconComponent = config.icon;
 
   return (
     <div
       className={`
         inline-flex items-center gap-1.5 rounded-full font-semibold
-        ${isGold ? 'bg-gradient-to-r from-yellow-100 to-amber-100 text-amber-800 border border-amber-300' : 'bg-[#C2EABD] text-[#465362]'}
+        ${config.bg}
         ${sizeClasses[size]}
         ${className}
       `}
-      title={isGold ? 'Premium Verified - Gold Badge' : 'Jhustify Verified - Basic Badge'}
+      title={config.title}
     >
-      <CheckCircle2 size={iconSizes[size]} className="fill-current" />
-      <span>{isGold ? 'Premium Verified' : 'Jhustify Verified'}</span>
+      <IconComponent size={iconSizes[size]} className="fill-current" />
+      <span>{config.label}</span>
     </div>
   );
 }

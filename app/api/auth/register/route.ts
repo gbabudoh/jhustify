@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
         message: 'User created successfully',
         token,
         user: {
-          id: user._id,
+          id: user._id.toString(),
           email: user.email,
           name: user.name,
           role: user.role,

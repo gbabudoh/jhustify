@@ -30,14 +30,27 @@ export default function VerifyPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedFiles, setSelectedFiles] = useState({
+    businessRepresentativePhoto: null as File | null,
     nationalId: null as File | null,
     registrationDoc: null as File | null,
     proofVideo: null as File | null,
   });
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
-  const handleFileChange = (fileType: 'nationalId' | 'registrationDoc' | 'proofVideo') => (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (fileType: 'businessRepresentativePhoto' | 'nationalId' | 'registrationDoc' | 'proofVideo') => (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     setSelectedFiles(prev => ({ ...prev, [fileType]: file }));
+    
+    // Create preview for photo
+    if (fileType === 'businessRepresentativePhoto' && file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else if (fileType === 'businessRepresentativePhoto' && !file) {
+      setPhotoPreview(null);
+    }
   };
 
   useEffect(() => {
@@ -115,14 +128,75 @@ export default function VerifyPage() {
         return;
       }
 
-      // Create business first
+      // Validate required photo
+      if (!selectedFiles.businessRepresentativePhoto) {
+        setError('Business representative photo is required');
+        setLoading(false);
+        return;
+      }
+
+      // Validate registration doc for formal businesses
+      if (formData.classification === 'REGISTERED' && !selectedFiles.registrationDoc) {
+        setError('Registration document is required for formal businesses');
+        setLoading(false);
+        return;
+      }
+
+      // Upload business representative photo first
+      const photoFormData = new FormData();
+      photoFormData.append('file', selectedFiles.businessRepresentativePhoto);
+      photoFormData.append('fileType', 'business-representative-photo');
+
+      const photoUploadResponse = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: photoFormData,
+      });
+
+      const photoData = await photoUploadResponse.json();
+      if (!photoUploadResponse.ok) {
+        setError(photoData.error || 'Failed to upload photo');
+        setLoading(false);
+        return;
+      }
+
+      // Upload registration document if formal business
+      let registrationDocUrl = null;
+      if (formData.classification === 'REGISTERED' && selectedFiles.registrationDoc) {
+        const docFormData = new FormData();
+        docFormData.append('file', selectedFiles.registrationDoc);
+        docFormData.append('fileType', 'registration-document');
+
+        const docUploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: docFormData,
+        });
+
+        const docData = await docUploadResponse.json();
+        if (!docUploadResponse.ok) {
+          setError(docData.error || 'Failed to upload registration document');
+          setLoading(false);
+          return;
+        }
+        registrationDocUrl = docData.url;
+      }
+
+      // Create business with photo URL
       const businessResponse = await fetch('/api/business', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          businessRepresentativePhoto: photoData.url,
+        }),
       });
 
       const businessData = await businessResponse.json();
@@ -131,9 +205,36 @@ export default function VerifyPage() {
         return;
       }
 
+      // If formal business with registration doc, create verification record
+      if (formData.classification === 'REGISTERED' && registrationDocUrl) {
+        const verificationResponse = await fetch('/api/verification/documents', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            businessId: businessData.business.id,
+            businessName: formData.businessName,
+            classification: formData.classification,
+            contactPersonName: formData.contactPersonName,
+            registrationDocSecureLink: registrationDocUrl,
+            nationalIdSecureLink: null, // Optional for basic listing
+            geoAddress: formData.physicalAddress,
+            geoCoordinates: null, // Can be added later
+          }),
+        });
+
+        if (!verificationResponse.ok) {
+          console.error('Failed to create verification record');
+          // Don't fail the whole process, just log it
+        }
+      }
+
       router.push(`/dashboard/business/${businessData.business.id}/verify`);
-    } catch (error) {
-      setError('An error occurred. Please try again.');
+    } catch (error: any) {
+      console.error('Submit error:', error);
+      setError(error.message || 'An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -278,8 +379,8 @@ export default function VerifyPage() {
                       label="Business Type"
                       options={[
                         { value: '', label: 'Select business type' },
-                        { value: 'REGISTERED', label: 'Registered (Formal)' },
-                        { value: 'UNREGISTERED', label: 'Unregistered (Informal)' },
+                        { value: 'REGISTERED', label: 'Formal (Registered Business)' },
+                        { value: 'UNREGISTERED', label: 'Informal (Unregistered Business)' },
                       ]}
                       value={formData.classification}
                       onChange={(e) => setFormData({ ...formData, classification: e.target.value })}
@@ -299,11 +400,12 @@ export default function VerifyPage() {
                   />
                   <div className="grid md:grid-cols-2 gap-4">
                     <Input
-                      label="Contact Number"
+                      label="Contact Number (Mobile)"
                       type="tel"
                       value={formData.contactNumber}
                       onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
                       required
+                      placeholder="+234 800 000 0000"
                     />
                     <Input
                       label="Email"
@@ -312,6 +414,58 @@ export default function VerifyPage() {
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       required
                     />
+                  </div>
+                  
+                  {/* Business Representative Photo */}
+                  <div>
+                    <label className="block text-sm font-medium text-[#465362] mb-2">
+                      Business Representative Photo <span className="text-red-500">*</span>
+                    </label>
+                    <div className="border-2 border-dashed border-[#D6D9DD] rounded-xl p-6 text-center hover:border-[#465362] hover:bg-[#F5F5F5] transition-all duration-200">
+                      {photoPreview ? (
+                        <div className="mb-4">
+                          <img
+                            src={photoPreview}
+                            alt="Business representative preview"
+                            className="max-w-full max-h-48 mx-auto rounded-lg object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-[#C2EABD] flex items-center justify-center mx-auto mb-3">
+                          <Upload className="text-[#465362]" size={20} />
+                        </div>
+                      )}
+                      <h4 className="font-semibold text-[#465362] mb-1">Business Representative Photo</h4>
+                      <p className="text-sm text-gray-600 mb-3">Upload a clear photo of the business representative</p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        id="businessRepresentativePhoto"
+                        onChange={handleFileChange('businessRepresentativePhoto')}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const fileInput = document.getElementById('businessRepresentativePhoto');
+                          fileInput?.click();
+                        }}
+                        className="inline-flex items-center justify-center px-4 py-2 border-2 border-[#465362] rounded-lg bg-white text-[#465362] font-medium hover:bg-[#465362] hover:text-white transition-colors cursor-pointer"
+                      >
+                        {selectedFiles.businessRepresentativePhoto ? 'Change Photo' : 'Choose Photo'}
+                      </button>
+                      {selectedFiles.businessRepresentativePhoto && (
+                        <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-lg">
+                          <p className="text-sm text-green-700 font-medium truncate">
+                            ✓ {selectedFiles.businessRepresentativePhoto.name}
+                          </p>
+                          <p className="text-xs text-green-600 mt-1">
+                            {(selectedFiles.businessRepresentativePhoto.size / 1024).toFixed(1)} KB
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -357,44 +511,53 @@ export default function VerifyPage() {
             <Card className="shadow-lg">
               <div className="mb-6 pb-4 border-b border-[#D6D9DD]">
                 <h2 className="text-2xl font-bold text-[#465362] mb-2">Upload Documents</h2>
-                <p className="text-gray-600">
+                <p className="text-gray-600 mb-2">
                   {formData.classification === 'REGISTERED'
-                    ? 'Please upload your registration documents and National ID for verification'
-                    : 'Please upload proof of presence (video/photos) and National ID for verification'}
+                    ? 'Formal businesses must upload registration documents to receive the Formal badge.'
+                    : 'Informal businesses will receive the Informal badge after listing.'}
+                </p>
+                <p className="text-sm text-gray-500">
+                  {formData.classification === 'REGISTERED'
+                    ? 'Upload your business registration documents to complete your free listing.'
+                    : 'You can upgrade to Verified badge later for ₦1,200/month with full verification.'}
                 </p>
               </div>
               
               <form onSubmit={handleFinalSubmit} className="space-y-6">
-                {/* National ID Upload */}
-                <div className="border-2 border-dashed border-[#D6D9DD] rounded-xl p-8 text-center hover:border-[#465362] hover:bg-[#F5F5F5] transition-all duration-200">
-                  <div className="w-16 h-16 rounded-full bg-[#C2EABD] flex items-center justify-center mx-auto mb-4">
-                    <Upload className="text-[#465362]" size={28} />
-                  </div>
-                  <h3 className="font-semibold text-[#465362] mb-2">National ID</h3>
-                  <p className="text-sm text-gray-600 mb-4">Upload a clear photo of your National ID card</p>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    id="nationalId"
-                    onChange={handleFileChange('nationalId')}
-                  />
-                  <label htmlFor="nationalId" className="cursor-pointer">
-                    <Button type="button" variant="outline" size="md">
-                      {selectedFiles.nationalId ? 'Change File' : 'Choose File'}
-                    </Button>
-                  </label>
-                  {selectedFiles.nationalId && (
-                    <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-lg">
-                      <p className="text-sm text-green-700 font-medium truncate">
-                        ✓ {selectedFiles.nationalId.name}
-                      </p>
-                      <p className="text-xs text-green-600 mt-1">
-                        {(selectedFiles.nationalId.size / 1024).toFixed(1)} KB
-                      </p>
+                {/* National ID Upload - Only required for Formal businesses */}
+                {formData.classification === 'REGISTERED' && (
+                  <div className="border-2 border-dashed border-[#D6D9DD] rounded-xl p-8 text-center hover:border-[#465362] hover:bg-[#F5F5F5] transition-all duration-200">
+                    <div className="w-16 h-16 rounded-full bg-[#C2EABD] flex items-center justify-center mx-auto mb-4">
+                      <Upload className="text-[#465362]" size={28} />
                     </div>
-                  )}
-                </div>
+                    <h3 className="font-semibold text-[#465362] mb-2">National ID (Optional for Basic Listing)</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Upload a clear photo of your National ID card. Required only for Verified badge upgrade.
+                    </p>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      id="nationalId"
+                      onChange={handleFileChange('nationalId')}
+                    />
+                    <label htmlFor="nationalId" className="cursor-pointer">
+                      <Button type="button" variant="outline" size="md">
+                        {selectedFiles.nationalId ? 'Change File' : 'Choose File'}
+                      </Button>
+                    </label>
+                    {selectedFiles.nationalId && (
+                      <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-sm text-green-700 font-medium truncate">
+                          ✓ {selectedFiles.nationalId.name}
+                        </p>
+                        <p className="text-xs text-green-600 mt-1">
+                          {(selectedFiles.nationalId.size / 1024).toFixed(1)} KB
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Conditional Uploads */}
                 {formData.classification === 'REGISTERED' && (
@@ -402,14 +565,17 @@ export default function VerifyPage() {
                     <div className="w-16 h-16 rounded-full bg-[#C2EABD] flex items-center justify-center mx-auto mb-4">
                       <Upload className="text-[#465362]" size={28} />
                     </div>
-                    <h3 className="font-semibold text-[#465362] mb-2">Registration Document</h3>
-                    <p className="text-sm text-gray-600 mb-4">Upload your business registration certificate or tax ID</p>
+                    <h3 className="font-semibold text-[#465362] mb-2">Registration Document (Required for Formal Badge)</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Upload your business registration certificate or tax ID to receive the Formal badge
+                    </p>
                     <input
                       type="file"
                       accept="image/*,.pdf"
                       className="hidden"
                       id="registrationDoc"
                       onChange={handleFileChange('registrationDoc')}
+                      required
                     />
                     <label htmlFor="registrationDoc" className="cursor-pointer">
                       <Button type="button" variant="outline" size="md">
@@ -430,34 +596,14 @@ export default function VerifyPage() {
                 )}
                 
                 {formData.classification === 'UNREGISTERED' && (
-                  <div className="border-2 border-dashed border-[#D6D9DD] rounded-xl p-8 text-center hover:border-[#465362] hover:bg-[#F5F5F5] transition-all duration-200">
-                    <div className="w-16 h-16 rounded-full bg-[#C2EABD] flex items-center justify-center mx-auto mb-4">
-                      <Upload className="text-[#465362]" size={28} />
-                    </div>
-                    <h3 className="font-semibold text-[#465362] mb-2">Proof of Presence Video</h3>
-                    <p className="text-sm text-gray-600 mb-4">Upload a short video showing you and your business location</p>
-                    <input
-                      type="file"
-                      accept="video/*"
-                      className="hidden"
-                      id="proofVideo"
-                      onChange={handleFileChange('proofVideo')}
-                    />
-                    <label htmlFor="proofVideo" className="cursor-pointer">
-                      <Button type="button" variant="outline" size="md">
-                        {selectedFiles.proofVideo ? 'Change File' : 'Choose File'}
-                      </Button>
-                    </label>
-                    {selectedFiles.proofVideo && (
-                      <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-lg">
-                        <p className="text-sm text-green-700 font-medium truncate">
-                          ✓ {selectedFiles.proofVideo.name}
-                        </p>
-                        <p className="text-xs text-green-600 mt-1">
-                          {(selectedFiles.proofVideo.size / (1024 * 1024)).toFixed(2)} MB
-                        </p>
-                      </div>
-                    )}
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
+                    <h3 className="font-semibold text-blue-800 mb-2">Informal Business Listing</h3>
+                    <p className="text-sm text-blue-700">
+                      Your business will receive the Informal badge after listing. No additional documents required for basic listing.
+                    </p>
+                    <p className="text-sm text-blue-600 mt-2">
+                      Upgrade to Verified badge (₦1,200/month) to get priority placement and premium features.
+                    </p>
                   </div>
                 )}
 

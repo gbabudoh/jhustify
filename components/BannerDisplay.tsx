@@ -214,6 +214,9 @@ export default function BannerDisplay() {
                           alt={banner.title}
                           className="w-full h-full object-cover"
                         />
+                        <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg hover:bg-white transition-colors duration-200">
+                          <span className="text-sm font-semibold text-gray-800">Find Out More</span>
+                        </div>
                       </a>
                     </div>
                   </SwiperSlide>
@@ -235,6 +238,9 @@ export default function BannerDisplay() {
                     alt="Business Growth"
                     className="w-full h-full object-cover"
                   />
+                  <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg hover:bg-white transition-colors duration-200">
+                    <span className="text-sm font-semibold text-gray-800">Find Out More</span>
+                  </div>
                   <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
                     <div className="bg-black/50 rounded px-2 py-1 inline-block">
                       <p className="text-sm font-semibold">Business Growth</p>
@@ -254,6 +260,9 @@ export default function BannerDisplay() {
                     alt="Trust & Security"
                     className="w-full h-full object-cover"
                   />
+                  <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg hover:bg-white transition-colors duration-200">
+                    <span className="text-sm font-semibold text-gray-800">Find Out More</span>
+                  </div>
                   <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
                     <div className="bg-black/50 rounded px-2 py-1 inline-block">
                       <p className="text-sm font-semibold">Trust & Security</p>
@@ -273,6 +282,9 @@ export default function BannerDisplay() {
                     alt="Network Solutions"
                     className="w-full h-full object-cover"
                   />
+                  <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg hover:bg-white transition-colors duration-200">
+                    <span className="text-sm font-semibold text-gray-800">Find Out More</span>
+                  </div>
                   <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
                     <div className="bg-black/50 rounded px-2 py-1 inline-block">
                       <p className="text-sm font-semibold">Network Solutions</p>
@@ -313,6 +325,9 @@ export default function BannerDisplay() {
                     alt={mainLeftBanner.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
+                  <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg hover:bg-white transition-colors duration-200">
+                    <span className="text-sm font-semibold text-gray-800">Find Out More</span>
+                  </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                       <h3 className="text-2xl font-bold mb-2">{mainLeftBanner.title}</h3>
@@ -349,6 +364,9 @@ export default function BannerDisplay() {
                       alt={topRightBanner.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
+                    <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg hover:bg-white transition-colors duration-200">
+                      <span className="text-sm font-semibold text-gray-800">Find Out More</span>
+                    </div>
                   </div>
                 </a>
               </motion.div>
@@ -375,6 +393,9 @@ export default function BannerDisplay() {
                       alt={middleRightBanner.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
+                    <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg hover:bg-white transition-colors duration-200">
+                      <span className="text-sm font-semibold text-gray-800">Find Out More</span>
+                    </div>
                   </div>
                 </a>
               </motion.div>
@@ -401,6 +422,9 @@ export default function BannerDisplay() {
                       alt={bottomRightBanner.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
+                    <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg hover:bg-white transition-colors duration-200">
+                      <span className="text-sm font-semibold text-gray-800">Find Out More</span>
+                    </div>
                   </div>
                 </a>
               </motion.div>

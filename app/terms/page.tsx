@@ -75,15 +75,20 @@ export default function TermsPage() {
               <section>
                 <h2 className="text-2xl font-semibold text-[#465362] mb-3">5. Subscription and Payments</h2>
                 <p className="text-gray-700 leading-relaxed">
-                  Verification services are provided on a subscription basis:
+                  Our pricing structure is simple and transparent:
                 </p>
                 <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
-                  <li><strong>Basic Tier:</strong> Free listing (no verification)</li>
-                  <li><strong>Verified Tier:</strong> $5.00 USD/month - Full verification with Trust Badge</li>
-                  <li><strong>Premium Tier:</strong> $15.00 USD/month - Enhanced features and Gold Badge</li>
+                  <li><strong>Basic Listing:</strong> Free forever - Basic business listing with core features</li>
+                  <li><strong>Premium Features:</strong> ₦1,200 per month (or equivalent in your local African currency) - Includes Trust Badge, verification, analytics dashboard, unlimited messages, priority support, and advanced lead tracking</li>
                 </ul>
                 <p className="text-gray-700 leading-relaxed mt-3">
-                  Subscriptions are billed monthly. You may cancel at any time, but verification fees are non-refundable.
+                  Premium feature subscriptions are billed monthly. You may cancel at any time, but subscription fees are non-refundable. 
+                  Basic listings remain free regardless of subscription status.
+                </p>
+                <p className="text-gray-700 leading-relaxed mt-3">
+                  We accept payments in various African currencies including Nigerian Naira (₦), South African Rand (R), 
+                  Kenyan Shilling (KSh), Ghanaian Cedi (GHS), and other major African currencies. Payment methods include 
+                  credit/debit cards, mobile money (M-Pesa, MTN MoMo), and bank transfers.
                 </p>
               </section>
 

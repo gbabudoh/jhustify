@@ -10,65 +10,59 @@ import TrustBadge from '@/components/TrustBadge';
 import Link from 'next/link';
 
 export default function PricingPage() {
-  // African currency equivalents (approximate, based on current exchange rates)
-  const currencyEquivalents = [
-    { code: 'NGN', symbol: '₦', amount: '1,200', country: 'Nigeria' },
-    { code: 'ZAR', symbol: 'R', amount: '28', country: 'South Africa' },
-    { code: 'KES', symbol: 'KSh', amount: '250', country: 'Kenya' },
-    { code: 'GHS', symbol: 'GHS', amount: '22', country: 'Ghana' },
-    { code: 'TZS', symbol: 'TSh', amount: '3,800', country: 'Tanzania' },
-    { code: 'UGX', symbol: 'USh', amount: '6,000', country: 'Uganda' },
-    { code: 'ETB', symbol: 'Br', amount: '85', country: 'Ethiopia' },
-    { code: 'XOF', symbol: 'CFA', amount: '1,200', country: 'West Africa' },
-  ];
-
   const tiers = [
     {
-      name: 'Basic Listing',
+      name: 'Basic',
       price: 'Free',
       period: 'Forever',
-      description: 'Free basic listing for your business',
+      description: 'Perfect for getting started',
       features: [
         'Business listing',
         'Basic profile',
         'Public visibility',
         'Customer messages (limited)',
-        'Search visibility',
-        'Informal or Formal badge',
-        'Mobile number verification',
-        'Business representative photo',
       ],
       badge: null,
-      badgeNote: 'Informal badge (free) or Formal badge (requires registration docs)',
       cta: 'Get Started',
       variant: 'outline' as const,
-      showCurrencies: false,
     },
     {
-      name: 'Premium Features',
-      price: '₦1,200',
+      name: 'Verified',
+      price: '$5',
       period: 'per month',
-      description: 'Verified listing with all premium features',
+      description: 'Full verification with Trust Badge',
       features: [
         'Everything in Basic',
-        'Verified Badge',
+        'Jhustify Trust Badge',
         'Full verification process',
-        'Identity verification (Passport/NIN/Driving License)',
-        'Business bank verification',
         'Priority in search results',
         'Enhanced profile features',
+        'Message tracking',
+        'Verified contact information',
+      ],
+      badge: 'BASIC' as const,
+      cta: 'Get Verified',
+      variant: 'primary' as const,
+      popular: true,
+    },
+    {
+      name: 'Premium',
+      price: '$15',
+      period: 'per month',
+      description: 'Advanced features and Gold Badge',
+      features: [
+        'Everything in Verified',
+        'Jhustify Premium Badge',
+        'Top placement in search',
         'Unlimited messages',
+        'CRM integration',
         'Analytics dashboard',
         'Priority support',
         'Advanced lead tracking',
-        'Top placement in search',
-        'Verified contact information',
       ],
-      badge: 'VERIFIED' as const,
-      cta: 'Get Premium',
-      variant: 'primary' as const,
-      popular: true,
-      showCurrencies: true,
+      badge: 'GOLD' as const,
+      cta: 'Upgrade to Premium',
+      variant: 'secondary' as const,
     },
   ];
 
@@ -89,7 +83,7 @@ export default function PricingPage() {
                 Simple, Transparent Pricing
               </h1>
               <p className="text-xl text-gray-700">
-                Start with a free basic listing, or upgrade to premium features for ₦1,200/month.
+                Choose the plan that's right for your business. All plans include our core verification services.
               </p>
             </motion.div>
           </div>
@@ -99,7 +93,7 @@ export default function PricingPage() {
       {/* Pricing Cards */}
       <section className="container mx-auto px-4 py-16">
         <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8">
             {tiers.map((tier, index) => (
               <motion.div
                 key={tier.name}
@@ -128,28 +122,12 @@ export default function PricingPage() {
                         )}
                       </div>
                       <p className="text-gray-600 mb-4">{tier.description}</p>
-                      {tier.badgeNote && (
-                        <p className="text-sm text-gray-500 mb-3 italic">{tier.badgeNote}</p>
-                      )}
                       <div className="flex items-baseline gap-2 mb-2">
                         <span className="text-4xl font-bold text-[#465362]">{tier.price}</span>
                         {tier.period && (
                           <span className="text-gray-600">/{tier.period}</span>
                         )}
                       </div>
-                      {tier.showCurrencies && (
-                        <div className="mt-4 pt-4 border-t border-gray-200">
-                          <p className="text-sm font-semibold text-gray-700 mb-2">Also available in:</p>
-                          <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                            {currencyEquivalents.map((currency) => (
-                              <div key={currency.code} className="flex items-center gap-1">
-                                <span className="font-medium">{currency.symbol}{currency.amount}</span>
-                                <span className="text-gray-500">({currency.code})</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
 
                     <ul className="space-y-3 mb-8">
@@ -201,8 +179,8 @@ export default function PricingPage() {
                   Can I change my plan later?
                 </h3>
                 <p className="text-gray-600">
-                  Yes! You can start with a free basic listing and upgrade to premium features at any time. 
-                  Changes will be reflected immediately.
+                  Yes! You can upgrade or downgrade your plan at any time. Changes will be reflected in your next 
+                  billing cycle.
                 </p>
               </Card>
 
@@ -218,12 +196,11 @@ export default function PricingPage() {
 
               <Card>
                 <h3 className="text-xl font-semibold text-[#465362] mb-2">
-                  What is the pricing structure?
+                  Is there a setup fee?
                 </h3>
                 <p className="text-gray-600">
-                  Basic listing is completely free forever. Premium features including verification badges, analytics 
-                  dashboard, unlimited messages, priority support, and advanced lead tracking are available for 
-                  ₦1,200 per month (or equivalent in your local currency).
+                  No setup fees! The first month of Verified tier starts at just $1.00, then continues at the 
+                  regular $5/month subscription rate.
                 </p>
               </Card>
             </div>
@@ -257,3 +234,4 @@ export default function PricingPage() {
     </div>
   );
 }
+

@@ -25,7 +25,9 @@ export async function POST(request: NextRequest) {
       classification,
       contactPersonName,
       nationalIdSecureLink,
+      identityDocumentType,
       registrationDocSecureLink,
+      businessBankName,
       geoAddress,
       geoCoordinates,
     } = body;
@@ -64,27 +66,37 @@ export async function POST(request: NextRequest) {
     }
 
     // Create or update verification
+    const updateData: any = {
+      verificationId,
+      businessId,
+      status: 'SUBMITTED',
+      classification,
+      nationalIdSecureLink,
+      identityDocumentType: identityDocumentType || undefined,
+      businessBankName: businessBankName || undefined,
+      registrationDocSecureLink: classification === 'REGISTERED' ? registrationDocSecureLink : undefined,
+      geoTagData: geoCoordinates
+        ? {
+            lat: geoCoordinates.lat,
+            lng: geoCoordinates.lng,
+            timestamp: new Date(),
+          }
+        : undefined,
+      progressPercent: 20,
+      nextStep: classification === 'REGISTERED' 
+        ? 'Awaiting Formal Vetting Specialist review (FVS)'
+        : 'Submit proof of presence (video/photos)',
+    };
+
+    // If verification already exists, preserve existing ID
+    const existingVerification = await Verification.findOne({ businessId });
+    if (existingVerification) {
+      updateData.verificationId = existingVerification.verificationId;
+    }
+
     const verification = await Verification.findOneAndUpdate(
       { businessId },
-      {
-        verificationId,
-        businessId,
-        status: 'SUBMITTED',
-        classification,
-        nationalIdSecureLink,
-        registrationDocSecureLink: classification === 'REGISTERED' ? registrationDocSecureLink : undefined,
-        geoTagData: geoCoordinates
-          ? {
-              lat: geoCoordinates.lat,
-              lng: geoCoordinates.lng,
-              timestamp: new Date(),
-            }
-          : undefined,
-        progressPercent: 20,
-        nextStep: classification === 'REGISTERED' 
-          ? 'Awaiting Formal Vetting Specialist review (FVS)'
-          : 'Submit proof of presence (video/photos)',
-      },
+      updateData,
       { upsert: true, new: true }
     );
 

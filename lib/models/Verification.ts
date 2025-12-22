@@ -8,9 +8,12 @@ export interface IVerification extends Document {
   
   // Document links (stored securely in S3/GCS)
   nationalIdSecureLink?: string;
+  identityDocumentType?: 'PASSPORT' | 'NIN' | 'DRIVING_LICENSE';
   registrationDocSecureLink?: string;
   proofOfPresenceVideoLink?: string;
   proofOfPresencePhotos?: string[];
+  businessBankName?: string;
+  phoneVerified: boolean;
   
   // Geo-tag data
   geoTagData?: {
@@ -63,9 +66,18 @@ const VerificationSchema = new Schema<IVerification>(
       required: true,
     },
     nationalIdSecureLink: String,
+    identityDocumentType: {
+      type: String,
+      enum: ['PASSPORT', 'NIN', 'DRIVING_LICENSE'],
+    },
     registrationDocSecureLink: String,
     proofOfPresenceVideoLink: String,
     proofOfPresencePhotos: [String],
+    businessBankName: String,
+    phoneVerified: {
+      type: Boolean,
+      default: false,
+    },
     geoTagData: {
       lat: Number,
       lng: Number,

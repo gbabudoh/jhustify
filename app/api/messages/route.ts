@@ -3,6 +3,7 @@ import connectDB from '@/lib/db';
 import Message from '@/lib/models/Message';
 import Business from '@/lib/models/Business';
 import { authenticateRequest } from '@/lib/utils/auth';
+import { emailService } from '@/lib/utils/email';
 
 // Create a new message (requires consumer authentication)
 export async function POST(request: NextRequest) {
@@ -68,6 +69,29 @@ export async function POST(request: NextRequest) {
 
     await newMessage.save();
 
+    // Send email notification to business owner
+    try {
+      // Get business owner email
+      const businessOwner = await User.findById(business.ownerId);
+      const businessEmail = business.email || businessOwner?.email;
+      
+      if (businessEmail) {
+        await emailService.sendBusinessMessageNotification({
+          businessEmail,
+          businessName: business.businessName,
+          fromName: user.name,
+          fromEmail: user.email,
+          fromPhone: phone,
+          subject,
+          message,
+          businessId: businessId.toString(),
+        });
+      }
+    } catch (emailError: any) {
+      // Don't fail the request if email fails, just log it
+      console.error('Failed to send email notification:', emailError);
+    }
+
     return NextResponse.json(
       {
         message: 'Message sent successfully',
@@ -107,8 +131,11 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      // Check ownership
-      if (business.ownerId.toString() !== auth.userId && auth.role !== 'ADMIN') {
+      // Check ownership (allow ADMIN and TRUST_TEAM to view any business messages)
+      const isOwner = business.ownerId.toString() === auth.userId;
+      const userRole = auth.role as string;
+      const isAdmin = userRole === 'ADMIN' || userRole === 'TRUST_TEAM';
+      if (!isOwner && !isAdmin) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
 

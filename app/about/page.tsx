@@ -5,7 +5,6 @@ import { Shield, Target, Globe, Users, CheckCircle2 } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Card from '@/components/ui/Card';
-import TrustBadge from '@/components/TrustBadge';
 
 export default function AboutPage() {
   return (
@@ -21,7 +20,6 @@ export default function AboutPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <TrustBadge type="GOLD" size="lg" className="mb-6" />
               <h1 className="text-4xl md:text-5xl font-bold text-[#465362] mb-4">
                 About Jhustify
               </h1>
