@@ -1,14 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Search, MapPin, Phone, Mail, Building2, User } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Search, Building2 } from 'lucide-react';
 import Header from '@/components/Header';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
-import TrustBadge from '@/components/TrustBadge';
-import RatingDisplay from '@/components/RatingDisplay';
-import Link from 'next/link';
+import BusinessCard from '@/components/BusinessCard';
 import { sortedAfricanCountries } from '@/lib/data/africanCountries';
 
 interface Business {
@@ -64,11 +62,7 @@ export default function SearchPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  useEffect(() => {
-    fetchBusinesses();
-  }, [debouncedSearchQuery, category, classification, country, city, verificationStatus]);
-
-  const fetchBusinesses = async () => {
+  const fetchBusinesses = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -82,7 +76,6 @@ export default function SearchPage() {
       const response = await fetch(`/api/business?${params.toString()}`);
       const data = await response.json();
       
-      // Always try to use the businesses array from the response
       setBusinesses(data.businesses || []);
     } catch (error) {
       console.error('Error fetching businesses:', error);
@@ -90,7 +83,11 @@ export default function SearchPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [debouncedSearchQuery, category, classification, country, city, verificationStatus]);
+
+  useEffect(() => {
+    fetchBusinesses();
+  }, [fetchBusinesses]);
 
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
@@ -217,80 +214,7 @@ export default function SearchPage() {
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {businesses.map((business) => (
-                  <Link key={business._id || business.id} href={`/business/${business.id || business._id}`}>
-                    <Card hover className="h-full transition-all hover:shadow-lg">
-                      <div className="flex items-start gap-3 mb-3">
-                        {/* Business Representative Photo */}
-                        {business.businessRepresentativePhoto ? (
-                          <div className="flex-shrink-0">
-                            <img
-                              src={business.businessRepresentativePhoto}
-                              alt={business.contactPersonName}
-                              className="w-12 h-12 rounded-full object-cover border-2 border-[#D6D9DD]"
-                            />
-                          </div>
-                        ) : (
-                          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-[#C2EABD] to-[#A0D995] flex items-center justify-center border-2 border-[#D6D9DD]">
-                            <User className="text-[#465362]" size={24} />
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <h3 className="text-xl font-semibold text-[#465362] flex-1 truncate">
-                              {business.businessName}
-                            </h3>
-                            {business.trustBadgeActive && (
-                              <TrustBadge type={business.trustBadgeType} size="sm" />
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-600 mt-1">{business.category}</p>
-                          {business.averageRating !== undefined && business.averageRating > 0 && (
-                            <div className="mt-2">
-                              <RatingDisplay
-                                average={business.averageRating}
-                                count={business.ratingCount || 0}
-                                size="sm"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="space-y-2 mt-4">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <MapPin size={16} />
-                          <span className="truncate">
-                            {business.city ? `${business.city}, ` : ''}{business.country}
-                          </span>
-                        </div>
-                        {business.physicalAddress && (
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <MapPin size={14} />
-                            <span className="truncate text-xs">{business.physicalAddress}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Phone size={16} />
-                          <span>{business.contactNumber}</span>
-                        </div>
-                        {business.email && business.verificationTier === 'PREMIUM' && (
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Mail size={16} />
-                            <span className="truncate">{business.email}</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="mt-4 pt-4 border-t border-[#D6D9DD] flex items-center justify-between">
-                        <span className="text-xs px-2 py-1 rounded-full bg-[#F5F5F5] text-[#465362]">
-                          {business.classification === 'REGISTERED' ? 'Formal' : 'Informal'}
-                        </span>
-                        {business.verificationStatus === 'VERIFIED' && (
-                          <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium">
-                            Verified
-                          </span>
-                        )}
-                      </div>
-                    </Card>
-                  </Link>
+                  <BusinessCard key={business._id || business.id} business={business} />
                 ))}
               </div>
             </>

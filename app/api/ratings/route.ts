@@ -4,6 +4,7 @@ import Rating from '@/lib/models/Rating';
 import Business from '@/lib/models/Business';
 import Message from '@/lib/models/Message';
 import { authenticateRequest } from '@/lib/utils/auth';
+import { analyzeSentiment } from '@/lib/utils/ai';
 
 /**
  * POST /api/ratings
@@ -68,6 +69,8 @@ export async function POST(request: NextRequest) {
 
     if (comment && comment.trim()) {
       ratingData.comment = comment.trim();
+      // Analyze sentiment using AI
+      ratingData.sentimentSummary = await analyzeSentiment(ratingData.comment);
     }
 
     const existingRating = await Rating.findOneAndUpdate(
@@ -86,6 +89,7 @@ export async function POST(request: NextRequest) {
           id: existingRating._id,
           rating: existingRating.rating,
           comment: existingRating.comment,
+          sentimentSummary: existingRating.sentimentSummary,
           verified: existingRating.verified,
         },
       },

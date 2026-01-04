@@ -1,44 +1,50 @@
 'use client';
 
-import { CheckCircle2, Building2, Store } from 'lucide-react';
+import { CheckCircle2, Building2, Store, ShieldCheck } from 'lucide-react';
 
 interface TrustBadgeProps {
-  type?: 'INFORMAL' | 'FORMAL' | 'VERIFIED';
+  type?: 'INFORMAL' | 'FORMAL' | 'VERIFIED' | 'COMMUNITY_TRUSTED';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
 export default function TrustBadge({ type = 'INFORMAL', size = 'md', className = '' }: TrustBadgeProps) {
   const sizeClasses = {
-    sm: 'text-xs px-2 py-1',
-    md: 'text-sm px-3 py-1.5',
-    lg: 'text-base px-4 py-2',
+    sm: 'text-xs px-2 py-0.5',
+    md: 'text-sm px-3 py-1',
+    lg: 'text-base px-4 py-1.5',
   };
 
   const iconSizes = {
-    sm: 14,
-    md: 18,
-    lg: 22,
+    sm: 12,
+    md: 16,
+    lg: 20,
   };
 
   const badgeConfig = {
     INFORMAL: {
-      bg: 'bg-blue-100 text-blue-800 border border-blue-300',
+      bg: 'bg-gray-100 text-gray-700 border border-gray-200',
       icon: Store,
       label: 'Informal',
-      title: 'Informal Business - Unregistered',
+      title: 'Informal Business - Not Registered',
     },
     FORMAL: {
-      bg: 'bg-green-100 text-green-800 border border-green-300',
+      bg: 'bg-blue-600 text-white border border-blue-700 shadow-md',
       icon: Building2,
-      label: 'Formal',
-      title: 'Formal Business - Registered',
+      label: 'VERIFIED FORMAL',
+      title: 'Formal Business - Verified Registration',
+    },
+    COMMUNITY_TRUSTED: {
+      bg: 'bg-[#5BB318] text-white border border-[#4da114] shadow-md',
+      icon: CheckCircle2,
+      label: 'COMMUNITY TRUSTED',
+      title: 'Community Trusted Business - High Ratings & Proof of Presence',
     },
     VERIFIED: {
-      bg: 'bg-gradient-to-r from-yellow-100 to-amber-100 text-amber-800 border border-amber-300',
-      icon: CheckCircle2,
-      label: 'Verified',
-      title: 'Verified Business - Fully Verified',
+      bg: 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border border-indigo-700 shadow-lg',
+      icon: ShieldCheck,
+      label: 'JHUSTIFY VERIFIED',
+      title: 'Verified Business - Fully Verified by Jhustify',
     },
   };
 

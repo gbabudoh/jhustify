@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, Navigation } from 'swiper/modules';
@@ -22,11 +23,24 @@ export default function BannerDisplay() {
   const [loading, setLoading] = useState(true);
   const impressionTracked = useRef<Set<string>>(new Set());
 
-  useEffect(() => {
-    fetchBanners();
+  const trackImpression = useCallback(async (bannerId: string) => {
+    // Only track once per page load
+    if (impressionTracked.current.has(bannerId)) return;
+
+    impressionTracked.current.add(bannerId);
+
+    try {
+      await fetch(`/api/banners/${bannerId}/analytics`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'impression' }),
+      });
+    } catch (error) {
+      console.error('Error tracking impression:', error);
+    }
   }, []);
 
-  const fetchBanners = async () => {
+  const fetchBanners = useCallback(async () => {
     try {
       const response = await fetch('/api/banners');
       const data = await response.json();
@@ -43,24 +57,11 @@ export default function BannerDisplay() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [trackImpression]);
 
-  const trackImpression = async (bannerId: string) => {
-    // Only track once per page load
-    if (impressionTracked.current.has(bannerId)) return;
-
-    impressionTracked.current.add(bannerId);
-
-    try {
-      await fetch(`/api/banners/${bannerId}/analytics`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'impression' }),
-      });
-    } catch (error) {
-      console.error('Error tracking impression:', error);
-    }
-  };
+  useEffect(() => {
+    fetchBanners();
+  }, [fetchBanners]);
 
   const trackClick = async (bannerId: string) => {
     try {
@@ -209,10 +210,12 @@ export default function BannerDisplay() {
                         rel="noopener noreferrer"
                         className="block w-full h-full"
                       >
-                        <img
+                        <Image
                           src={banner.imageUrl}
                           alt={banner.title}
-                          className="w-full h-full object-cover"
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 1024px) 100vw, 66vw"
                         />
                         <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg hover:bg-white transition-colors duration-200">
                           <span className="text-sm font-semibold text-gray-800">Find Out More</span>
@@ -233,10 +236,12 @@ export default function BannerDisplay() {
                   rel="noopener noreferrer"
                   className="block w-full h-full"
                 >
-                  <img
+                  <Image
                     src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80"
                     alt="Business Growth"
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 33vw"
                   />
                   <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg hover:bg-white transition-colors duration-200">
                     <span className="text-sm font-semibold text-gray-800">Find Out More</span>
@@ -255,10 +260,12 @@ export default function BannerDisplay() {
                   rel="noopener noreferrer"
                   className="block w-full h-full"
                 >
-                  <img
+                  <Image
                     src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80"
                     alt="Trust & Security"
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 33vw"
                   />
                   <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg hover:bg-white transition-colors duration-200">
                     <span className="text-sm font-semibold text-gray-800">Find Out More</span>
@@ -277,10 +284,12 @@ export default function BannerDisplay() {
                   rel="noopener noreferrer"
                   className="block w-full h-full"
                 >
-                  <img
+                  <Image
                     src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80"
                     alt="Network Solutions"
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 33vw"
                   />
                   <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg hover:bg-white transition-colors duration-200">
                     <span className="text-sm font-semibold text-gray-800">Find Out More</span>
@@ -320,10 +329,13 @@ export default function BannerDisplay() {
                 className="block group overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300"
               >
                 <div className="relative w-full h-64 md:h-80 lg:h-96 overflow-hidden">
-                  <img
+                  <Image
                     src={mainLeftBanner.imageUrl}
                     alt={mainLeftBanner.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    sizes="(max-width: 1024px) 100vw, 66vw"
+                    priority
                   />
                   <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg hover:bg-white transition-colors duration-200">
                     <span className="text-sm font-semibold text-gray-800">Find Out More</span>
@@ -359,10 +371,12 @@ export default function BannerDisplay() {
                   className="block group overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300 h-full"
                 >
                   <div className="relative w-full h-full min-h-[120px] md:min-h-[140px] lg:min-h-[100px] overflow-hidden">
-                    <img
+                    <Image
                       src={topRightBanner.imageUrl}
                       alt={topRightBanner.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      sizes="(max-width: 1024px) 100vw, 33vw"
                     />
                     <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg hover:bg-white transition-colors duration-200">
                       <span className="text-sm font-semibold text-gray-800">Find Out More</span>
@@ -388,10 +402,12 @@ export default function BannerDisplay() {
                   className="block group overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300 h-full"
                 >
                   <div className="relative w-full h-full min-h-[120px] md:min-h-[140px] lg:min-h-[100px] overflow-hidden">
-                    <img
+                    <Image
                       src={middleRightBanner.imageUrl}
                       alt={middleRightBanner.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      sizes="(max-width: 1024px) 100vw, 33vw"
                     />
                     <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg hover:bg-white transition-colors duration-200">
                       <span className="text-sm font-semibold text-gray-800">Find Out More</span>
@@ -417,10 +433,12 @@ export default function BannerDisplay() {
                   className="block group overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300 h-full"
                 >
                   <div className="relative w-full h-full min-h-[120px] md:min-h-[140px] lg:min-h-[100px] overflow-hidden">
-                    <img
+                    <Image
                       src={bottomRightBanner.imageUrl}
                       alt={bottomRightBanner.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      sizes="(max-width: 1024px) 100vw, 33vw"
                     />
                     <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg hover:bg-white transition-colors duration-200">
                       <span className="text-sm font-semibold text-gray-800">Find Out More</span>

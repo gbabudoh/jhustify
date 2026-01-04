@@ -5,6 +5,7 @@ export interface IRating extends Document {
   userId: mongoose.Types.ObjectId; // Consumer who rated
   rating: number; // 1-5 stars
   comment?: string;
+  sentimentSummary?: string; // AI-generated summary of the review
   verified: boolean; // Whether the consumer has actually done business with them
   createdAt: Date;
   updatedAt: Date;
@@ -33,6 +34,10 @@ const RatingSchema = new Schema<IRating>(
     comment: {
       type: String,
       maxlength: 1000,
+    },
+    sentimentSummary: {
+      type: String,
+      maxlength: 500,
     },
     verified: {
       type: Boolean,

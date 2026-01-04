@@ -1,15 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { MapPin, Phone, Mail, User, Building2, MessageSquare, LogIn, ArrowLeft, Star } from 'lucide-react';
+import { MapPin, Phone, Building2, MessageSquare, ArrowLeft, Star, Instagram, Linkedin, Facebook, CreditCard, Clock, ShieldCheck, ExternalLink, Globe } from 'lucide-react';
 import Header from '@/components/Header';
 import Card from '@/components/ui/Card';
 import TrustBadge from '@/components/TrustBadge';
 import Button from '@/components/ui/Button';
 import RatingDisplay from '@/components/RatingDisplay';
 import RatingForm from '@/components/RatingForm';
+import RichMediaGallery from '@/components/RichMediaGallery';
+import FormalizationProgress from '@/components/FormalizationProgress';
 
 interface Business {
   _id?: string;
@@ -26,10 +28,39 @@ interface Business {
   verificationStatus: string;
   verificationTier: string;
   trustBadgeActive: boolean;
-  trustBadgeType?: 'INFORMAL' | 'FORMAL' | 'VERIFIED';
+  trustBadgeType?: 'INFORMAL' | 'FORMAL' | 'VERIFIED' | 'COMMUNITY_TRUSTED';
   businessRepresentativePhoto?: string;
   averageRating?: number;
   ratingCount?: number;
+  // Rich Data Fields
+  socialLinks?: {
+    instagram?: string;
+    whatsapp?: string;
+    facebook?: string;
+    linkedin?: string;
+  };
+  paymentMethods?: string[];
+  yearsInOperation?: number;
+  trustScore?: number;
+  formalizationProgress?: number;
+  mediaGallery?: string[];
+}
+
+interface Rating {
+  id: string;
+  _id?: string;
+  userName: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+  verified?: boolean;
+  sentimentSummary?: string;
+}
+
+interface RatingStats {
+  average: number;
+  count: number;
+  distribution: Record<number, number>;
 }
 
 export default function BusinessProfilePage() {
@@ -40,31 +71,18 @@ export default function BusinessProfilePage() {
   const [showContactForm, setShowContactForm] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [messageSuccess, setMessageSuccess] = useState(false);
   const [messageError, setMessageError] = useState('');
   const [message, setMessage] = useState({ phone: '', subject: '', message: '' });
-  const [ratings, setRatings] = useState<any[]>([]);
-  const [ratingStats, setRatingStats] = useState<any>(null);
+  const [ratings, setRatings] = useState<Rating[]>([]);
+  const [ratingStats, setRatingStats] = useState<RatingStats | null>(null);
   const [showRatingForm, setShowRatingForm] = useState(false);
-  const [userRating, setUserRating] = useState<any>(null);
+  const [userRating, setUserRating] = useState<Rating | null>(null);
   const [loadingRatings, setLoadingRatings] = useState(false);
 
-  useEffect(() => {
-    if (params.id) {
-      fetchBusiness();
-      fetchRatings();
-    }
-    checkAuth();
-  }, [params.id]);
-
-  useEffect(() => {
-    if (isAuthenticated && params.id) {
-      checkUserRating();
-    }
-  }, [isAuthenticated, params.id]);
-
-  const checkAuth = () => {
+  const checkAuth = useCallback(() => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
       const userStr = localStorage.getItem('user');
@@ -74,18 +92,21 @@ export default function BusinessProfilePage() {
           const user = JSON.parse(userStr);
           setIsAuthenticated(true);
           setUserRole(user.role);
-        } catch (e) {
+          setUserId(user.id || user._id);
+        } catch {
           setIsAuthenticated(false);
           setUserRole(null);
+          setUserId(null);
         }
       } else {
         setIsAuthenticated(false);
         setUserRole(null);
+        setUserId(null);
       }
     }
-  };
+  }, []);
 
-  const fetchBusiness = async () => {
+  const fetchBusiness = useCallback(async () => {
     try {
       const response = await fetch(`/api/business/${params.id}`);
       const data = await response.json();
@@ -103,7 +124,59 @@ export default function BusinessProfilePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
+
+  const fetchRatings = useCallback(async () => {
+    if (!params.id) return;
+    setLoadingRatings(true);
+    try {
+      const response = await fetch(`/api/ratings?businessId=${params.id}&limit=10`);
+      const data = await response.json();
+      if (response.ok) {
+        setRatings(data.ratings || []);
+        setRatingStats(data.stats || null);
+      }
+    } catch (error) {
+      console.error('Error fetching ratings:', error);
+    } finally {
+      setLoadingRatings(false);
+    }
+  }, [params.id]);
+
+  const checkUserRating = useCallback(async () => {
+    if (!params.id || !isAuthenticated || userRole !== 'CONSUMER' || !userId) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/ratings?businessId=${params.id}&userId=${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (response.ok && data.ratings && data.ratings.length > 0) {
+        setUserRating(data.ratings[0]);
+      } else {
+        setUserRating(null);
+      }
+    } catch (error) {
+      console.error('Error checking user rating:', error);
+    }
+  }, [params.id, isAuthenticated, userRole, userId]);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  useEffect(() => {
+    if (params.id) {
+      fetchBusiness();
+      fetchRatings();
+    }
+  }, [params.id, fetchBusiness, fetchRatings]);
+
+  useEffect(() => {
+    checkUserRating();
+  }, [checkUserRating]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,7 +193,7 @@ export default function BusinessProfilePage() {
       return;
     }
 
-    if (!message.subject.trim() || !message.message.trim()) {
+    if (!message.subject || !message.message) {
       setMessageError('Please fill in all required fields.');
       return;
     }
@@ -137,9 +210,9 @@ export default function BusinessProfilePage() {
         },
           body: JSON.stringify({
           businessId: business.id || business._id,
-          subject: message.subject.trim(),
-          message: message.message.trim(),
-          phone: message.phone.trim() || undefined,
+          subject: message.subject,
+          message: message.message,
+          phone: message.phone || undefined,
         }),
       });
 
@@ -156,7 +229,7 @@ export default function BusinessProfilePage() {
       
       // Reset success message after 5 seconds
       setTimeout(() => setMessageSuccess(false), 5000);
-    } catch (error) {
+    } catch {
       setMessageError('An error occurred. Please try again.');
     } finally {
       setSendingMessage(false);
@@ -175,45 +248,6 @@ export default function BusinessProfilePage() {
     }
 
     setShowContactForm(!showContactForm);
-  };
-
-  const fetchRatings = async () => {
-    if (!params.id) return;
-    setLoadingRatings(true);
-    try {
-      const response = await fetch(`/api/ratings?businessId=${params.id}&limit=10`);
-      const data = await response.json();
-      if (response.ok) {
-        setRatings(data.ratings || []);
-        setRatingStats(data.stats || null);
-      }
-    } catch (error) {
-      console.error('Error fetching ratings:', error);
-    } finally {
-      setLoadingRatings(false);
-    }
-  };
-
-  const checkUserRating = async () => {
-    if (!params.id || !isAuthenticated || userRole !== 'CONSUMER') return;
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/ratings?businessId=${params.id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
-      if (response.ok && data.ratings) {
-        const tokenData = JSON.parse(atob(token!.split('.')[1]));
-        const userRating = data.ratings.find((r: any) => r.userId === tokenData.userId);
-        if (userRating) {
-          setUserRating(userRating);
-        }
-      }
-    } catch (error) {
-      console.error('Error checking user rating:', error);
-    }
   };
 
   const handleRatingSuccess = () => {
@@ -269,147 +303,205 @@ export default function BusinessProfilePage() {
             </Link>
           </div>
           
-          <Card className="mb-6">
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-4">
-                  {/* Business Representative Photo */}
-                  {business.businessRepresentativePhoto ? (
-                    <div className="flex-shrink-0">
-                      <img
-                        src={business.businessRepresentativePhoto}
-                        alt={business.contactPersonName}
-                        className="w-16 h-16 rounded-full object-cover border-2 border-[#D6D9DD]"
-                      />
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Left Column: Media & Core Info */}
+            <div className="lg:col-span-2 space-y-8">
+              <Card className="p-0 overflow-hidden border-none shadow-xl">
+                <RichMediaGallery images={business.mediaGallery || []} />
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-6">
+                    <div>
+                      <h1 className="text-4xl font-black text-[#465362] mb-2">{business.businessName}</h1>
+                      <div className="flex items-center gap-4 text-gray-500 font-medium">
+                        <span className="flex items-center gap-1"><Building2 size={16} /> {business.category}</span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1"><Clock size={16} /> {business.yearsInOperation || 2}+ Years in Operation</span>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="flex-shrink-0 w-16 h-16 rounded-full bg-gradient-to-br from-[#C2EABD] to-[#A0D995] flex items-center justify-center border-2 border-[#D6D9DD]">
-                      <User className="text-[#465362]" size={32} />
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <h1 className="text-3xl font-bold text-[#465362]">{business.businessName}</h1>
-                      {business.trustBadgeActive && (
-                        <TrustBadge type={business.trustBadgeType} size="md" />
-                      )}
-                    </div>
-                    <p className="text-lg text-gray-600 mt-2">{business.category}</p>
-                    <div className="flex items-center gap-3 mt-2 flex-wrap">
-                      <span className="inline-block text-xs px-3 py-1 rounded-full bg-[#F5F5F5] text-[#465362]">
-                        {business.classification === 'REGISTERED' ? 'Formal Business' : 'Informal Business'}
-                      </span>
-                      {business.averageRating !== undefined && business.averageRating > 0 && (
-                        <RatingDisplay
-                          average={business.averageRating}
-                          count={business.ratingCount || 0}
-                          size="sm"
-                        />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6 mt-6">
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <MapPin className="text-[#465362] mt-1" size={20} />
-                  <div>
-                    <p className="font-medium text-[#465362]">Address</p>
-                    <p className="text-gray-600">{business.physicalAddress}</p>
-                    {(business.city || business.country) && (
-                      <p className="text-sm text-gray-500 mt-1">
-                        {business.city ? `${business.city}, ` : ''}{business.country}
-                      </p>
+                    {business.trustBadgeActive && (
+                      <TrustBadge type={business.trustBadgeType} size="lg" />
                     )}
                   </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Phone className="text-[#465362] mt-1" size={20} />
-                  <div>
-                    <p className="font-medium text-[#465362]">Phone</p>
-                    <p className="text-gray-600">{business.contactNumber}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-4">
-                {business.verificationTier === 'PREMIUM' && (
-                  <div className="flex items-start gap-3">
-                    <Mail className="text-[#465362] mt-1" size={20} />
-                    <div>
-                      <p className="font-medium text-[#465362]">Email</p>
-                      <p className="text-gray-600">{business.email}</p>
+                  
+                  <div className="grid md:grid-cols-2 gap-6 bg-gray-50 p-6 rounded-3xl">
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
+                          <MapPin size={18} className="text-[#465362]" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Location</p>
+                          <p className="text-[#465362] font-semibold">{business.physicalAddress}</p>
+                          <p className="text-sm text-gray-500">{business.city}, {business.country}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
+                          <Phone size={18} className="text-[#465362]" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Contact</p>
+                          <p className="text-[#465362] font-semibold">{business.contactNumber}</p>
+                          <p className="text-sm text-gray-500">{business.contactPersonName}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
+                          <CreditCard size={18} className="text-[#465362]" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Payments</p>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {(business.paymentMethods || ['Mobile Money', 'Cash']).map((method, idx) => (
+                              <span key={idx} className="bg-white px-2 py-0.5 rounded-lg text-[10px] font-bold text-[#465362] border border-gray-100 uppercase">
+                                {method}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
+                          <Globe size={18} className="text-[#465362]" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Social Presence</p>
+                          <div className="flex gap-3 mt-1">
+                            {business.socialLinks?.instagram && (
+                              <a 
+                                href={business.socialLinks.instagram} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="text-pink-600 hover:scale-110 transition-transform"
+                                title="Instagram"
+                              >
+                                <Instagram size={20} />
+                              </a>
+                            )}
+                            {business.socialLinks?.facebook && (
+                              <a 
+                                href={business.socialLinks.facebook} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="text-blue-600 hover:scale-110 transition-transform"
+                                title="Facebook"
+                              >
+                                <Facebook size={20} />
+                              </a>
+                            )}
+                            {business.socialLinks?.linkedin && (
+                              <a 
+                                href={business.socialLinks.linkedin} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="text-blue-800 hover:scale-110 transition-transform"
+                                title="LinkedIn"
+                              >
+                                <Linkedin size={20} />
+                              </a>
+                            )}
+                            {(!business.socialLinks || (!business.socialLinks.instagram && !business.socialLinks.facebook && !business.socialLinks.linkedin)) && (
+                              <span className="text-xs text-gray-400 italic">No social links added</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                )}
-                <div className="flex items-start gap-3">
-                  <User className="text-[#465362] mt-1" size={20} />
-                  <div>
-                    <p className="font-medium text-[#465362]">Contact Person</p>
-                    <p className="text-gray-600">{business.contactPersonName}</p>
+                </div>
+              </Card>
+
+              {/* Action Area */}
+              <div className="flex flex-col md:flex-row gap-4">
+                {!isAuthenticated ? (
+                  <div className="bg-[#C2EABD] bg-opacity-20 rounded-3xl p-6 flex flex-col md:flex-row items-center gap-6 w-full">
+                    <div className="flex-1">
+                      <p className="text-[#465362] font-bold mb-1">Unlock Direct Contact</p>
+                      <p className="text-sm text-gray-600">Create a consumer account to message this business and access premium features.</p>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <Link href={`/register?role=CONSUMER&redirect=${encodeURIComponent(`/business/${params.id}`)}`}>
+                        <Button variant="primary">Register Now</Button>
+                      </Link>
+                      <Link href={`/login?redirect=${encodeURIComponent(`/business/${params.id}`)}`}>
+                        <Button variant="ghost">Sign In</Button>
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            {business.verificationStatus === 'VERIFIED' && (
-              <div className="mt-6 pt-6 border-t border-[#D6D9DD]">
-                <div className="bg-[#C2EABD] bg-opacity-20 rounded-lg p-4">
-                  <p className="text-sm text-[#465362] font-medium mb-1">
-                    ✓ Verified Business
-                  </p>
-                  <p className="text-xs text-gray-600">
-                    This business has been verified by Jhustify. Contact information and location have been confirmed.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <div className="mt-6">
-              {!isAuthenticated ? (
-                <div className="bg-[#C2EABD] bg-opacity-20 rounded-lg p-4 mb-4">
-                  <p className="text-sm text-[#465362] mb-3">
-                    Create a free consumer account to contact this business directly through Jhustify.
-                  </p>
-                  <div className="flex gap-3">
-                    <Link href={`/register?role=CONSUMER&redirect=${encodeURIComponent(`/business/${params.id}`)}`}>
-                      <Button variant="primary" size="sm">
-                        <LogIn className="mr-2" size={16} />
-                        Create Consumer Account
-                      </Button>
-                    </Link>
+                ) : userRole !== 'CONSUMER' ? (
+                  <div className="bg-amber-50 border border-amber-100 rounded-3xl p-6 w-full">
+                    <p className="text-amber-800 font-bold mb-1">Business Account View</p>
+                    <p className="text-sm text-amber-700 mb-4">You are viewing this as a business representative. Switch to a consumer account to interact.</p>
                     <Link href={`/login?redirect=${encodeURIComponent(`/business/${params.id}`)}`}>
-                      <Button variant="ghost" size="sm">
-                        Sign In
-                      </Button>
+                      <button className="text-sm font-bold text-amber-900 underline underline-offset-4">Switch Account</button>
                     </Link>
                   </div>
-                </div>
-              ) : userRole !== 'CONSUMER' ? (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                  <p className="text-sm text-yellow-800 mb-3">
-                    You're logged in as a business owner. To contact businesses, please log in with a consumer account.
-                  </p>
-                  <Link href={`/login?redirect=${encodeURIComponent(`/business/${params.id}`)}`}>
-                    <Button variant="ghost" size="sm">
-                      Switch Account
+                ) : (
+                  <div className="flex gap-4 w-full">
+                    <Button 
+                      variant="primary" 
+                      onClick={handleContactClick} 
+                      className="flex-1 py-4 text-lg font-bold shadow-xl shadow-[#5BB318]/20"
+                    >
+                      <MessageSquare className="mr-2" size={24} />
+                      Fast Contact
                     </Button>
-                  </Link>
-                </div>
-              ) : (
-                <Button
-                  variant="primary"
-                  onClick={handleContactClick}
-                  className="w-full md:w-auto"
-                >
-                  <MessageSquare className="mr-2" size={20} />
-                  Send Message
-                </Button>
-              )}
+                    <a 
+                      href={business.contactNumber ? `https://wa.me/${business.contactNumber.replace(/\+/g, '')}` : '#'} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="flex-1"
+                    >
+                      <Button variant="outline" className="w-full py-4 text-lg font-bold border-2 border-gray-200">
+                        WhatsApp Now
+                      </Button>
+                    </a>
+                  </div>
+                )}
+              </div>
             </div>
-          </Card>
+
+            {/* Right Column: Status & Impact */}
+            <div className="space-y-8">
+              {/* Trust Card */}
+              <Card className="bg-gradient-to-br from-[#465362] to-[#2d3748] border-none text-white overflow-hidden relative">
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                  <ShieldCheck size={120} />
+                </div>
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="bg-[#C2EABD] text-[#465362] text-[10px] font-black px-2 py-0.5 rounded uppercase">Verified by Jhustify</span>
+                  </div>
+                  <div className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1">Trust Score</div>
+                  <div className="text-5xl font-black mb-4">{business.trustScore || 85}<span className="text-2xl text-[#C2EABD]">/100</span></div>
+                  <p className="text-sm text-gray-300 leading-relaxed mb-6">
+                    Based on physical presence, community ratings, and operational years. High scores unlock Blue Badge status.
+                  </p>
+                  <button className="w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-bold transition-all border border-white/20">
+                    How is this calculated?
+                  </button>
+                </div>
+              </Card>
+
+              {/* Road to Formalization */}
+              <FormalizationProgress progress={business.formalizationProgress || 35} />
+
+              {/* Contextual Sidebar Ad (Soft Ad) */}
+              <div className="bg-white rounded-3xl p-6 border-2 border-dashed border-gray-100 flex flex-col items-center text-center group">
+                <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <ExternalLink size={32} className="text-gray-300" />
+                </div>
+                <span className="text-[10px] font-black text-[#5BB318] uppercase tracking-widest mb-2">Partner Connection</span>
+                <p className="font-bold text-[#465362] mb-1">Need Capital to Grow?</p>
+                <p className="text-xs text-gray-500 mb-6">Standard Trust Bank offers special rates for Jhustify-verified businesses.</p>
+                <button className="w-full py-3 bg-[#465362] text-white rounded-xl text-sm font-bold hover:bg-[#343e49] transition-all">
+                  Apply for Micro-loan
+                </button>
+              </div>
+            </div>
+          </div>
 
           {showContactForm && isAuthenticated && userRole === 'CONSUMER' && (
             <Card>
@@ -526,7 +618,7 @@ export default function BusinessProfilePage() {
               <div className="mb-6">
                 <RatingForm
                   businessId={params.id as string}
-                  existingRating={userRating}
+                  existingRating={userRating ? { rating: userRating.rating, comment: userRating.comment } : undefined}
                   onSuccess={handleRatingSuccess}
                   onCancel={() => setShowRatingForm(false)}
                 />
@@ -539,35 +631,52 @@ export default function BusinessProfilePage() {
               </div>
             ) : ratings.length > 0 ? (
               <div className="space-y-4">
-                {ratings.map((rating: any) => (
-                  <div key={rating.id} className="p-4 border border-gray-200 rounded-lg">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C2EABD] to-[#A0D995] flex items-center justify-center">
-                          <User size={16} className="text-[#465362]" />
+                {ratings.map((rating: Rating, index: number) => (
+                  <div key={rating._id || rating.id || `rating-${index}`} className="p-6 border border-gray-100 rounded-3xl bg-white shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center font-bold text-[#465362] border border-gray-100 uppercase text-xs">
+                          {(rating.userName || 'U').substring(0, 2)}
                         </div>
                         <div>
-                          <p className="font-medium text-[#465362]">{rating.userName}</p>
-                          <RatingDisplay
-                            average={rating.rating}
-                            count={0}
-                            size="sm"
-                            showCount={false}
-                          />
+                          <p className="font-bold text-[#465362]">{rating.userName || 'Anonymous User'}</p>
+                          <div className="flex items-center gap-2">
+                            <RatingDisplay
+                              average={rating.rating}
+                              count={0}
+                              size="sm"
+                              showCount={false}
+                            />
+                            <span className="text-[10px] text-gray-400 font-mono">
+                              {rating.createdAt ? new Date(rating.createdAt).toLocaleDateString() : 'Recent'}
+                            </span>
+                          </div>
                         </div>
                       </div>
                       {rating.verified && (
-                        <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">
-                          (consumer)
-                        </span>
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-[#5BB318] bg-[#D9F8D4] px-2 py-0.5 rounded-full uppercase tracking-tighter">
+                          <ShieldCheck size={10} /> Verified Purchase
+                        </div>
                       )}
                     </div>
+
                     {rating.comment && (
-                      <p className="text-gray-700 mt-2">{rating.comment}</p>
+                      <div className="space-y-3">
+                        <p className="text-gray-600 leading-relaxed italic">&quot;{rating.comment}&quot;</p>
+                        
+                        {/* AI Sentiment Summary */}
+                        {rating.sentimentSummary && (
+                          <div className="bg-[#465362]/5 p-3 rounded-2xl border border-[#465362]/10">
+                            <div className="text-[9px] font-black text-[#465362] uppercase tracking-widest mb-1 flex items-center gap-1">
+                              AI Insight
+                            </div>
+                            <p className="text-xs text-gray-500 italic">
+                              {rating.sentimentSummary}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     )}
-                    <p className="text-xs text-gray-500 mt-2">
-                      {new Date(rating.createdAt).toLocaleDateString()}
-                    </p>
                   </div>
                 ))}
               </div>

@@ -153,6 +153,17 @@ export default function Header() {
                     <span>Get Verified</span>
                   </Link>
                 )}
+                {userRole === 'ADMIN' && (
+                  <Link
+                    href="/admin"
+                    className={`flex items-center gap-2 text-sm font-medium transition-all duration-300 px-3 py-2 rounded-lg hover:bg-[#F5F5F5] ${
+                      isActive('/admin') ? 'text-[#465362] bg-[#F5F5F5]' : 'text-gray-600 hover:text-[#465362]'
+                    }`}
+                  >
+                    <Settings size={18} />
+                    <span>Admin</span>
+                  </Link>
+                )}
                 <Link
                   href="/dashboard"
                   className={`flex items-center gap-2 text-sm font-medium transition-all duration-300 px-3 py-2 rounded-lg hover:bg-[#F5F5F5] ${
