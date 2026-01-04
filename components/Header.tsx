@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Search, User, Menu, X, LogOut, LogIn, LayoutDashboard, ShieldCheck, ChevronDown, Globe, Bell, Settings, HelpCircle, CreditCard, Briefcase, Home, Star, TrendingUp, Users, MessageSquare, ArrowRight, Zap, Shield, Award, Building, CheckCircle } from 'lucide-react';
+import { Search, User, Menu, X, LogOut, LogIn, LayoutDashboard, ShieldCheck, ChevronDown, Bell, Settings, Home, TrendingUp, MessageSquare, ArrowRight, CheckCircle } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import Button from './ui/Button';
 
@@ -32,7 +32,7 @@ export default function Header() {
             const user = JSON.parse(userStr);
             setUserName(user.name || 'User');
             setUserRole(user.role || '');
-          } catch (e) {
+          } catch {
             setUserName('User');
             setUserRole('');
           }
@@ -109,7 +109,7 @@ export default function Header() {
   };
 
   return (
-    <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md border-b border-[#D6D9DD] shadow-lg' : 'bg-white border-b border-[#D69DD] shadow-sm'}`}>
+    <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md border-b border-[#dcdcdc]/80 shadow-lg' : 'bg-white border-b border-[#dcdcdc]/50 shadow-sm'}`}>
       <nav className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
