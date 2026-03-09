@@ -11,12 +11,11 @@ export default function RichMediaGallery({ images }: RichMediaGalleryProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
 
-  // If no images provided, use some professional placeholders
-  const displayImages = images && images.length > 0 ? images : [
-    "https://images.unsplash.com/photo-1542623024-a797a7a4930d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    "https://images.unsplash.com/photo-1534452203293-494d7ddbf7e0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    "https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-  ];
+  if (!images || images.length === 0) {
+    return null;
+  }
+
+  const displayImages = images;
 
   const handleNext = () => setCurrentIndex((prev) => (prev + 1) % displayImages.length);
   const handlePrev = () => setCurrentIndex((prev) => (prev - 1 + displayImages.length) % displayImages.length);
@@ -37,13 +36,13 @@ export default function RichMediaGallery({ images }: RichMediaGalleryProps) {
         <div className="absolute inset-0 flex items-center justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
           <button 
             onClick={handlePrev}
-            className="p-2 rounded-full bg-white/80 backdrop-blur-sm text-[#465362] hover:bg-white shadow-lg transition-all"
+            className="p-2 rounded-full bg-white/80 backdrop-blur-sm text-[#6d6e6b] hover:bg-white shadow-lg transition-all"
           >
             <ChevronLeft size={24} />
           </button>
           <button 
             onClick={handleNext}
-            className="p-2 rounded-full bg-white/80 backdrop-blur-sm text-[#465362] hover:bg-white shadow-lg transition-all"
+            className="p-2 rounded-full bg-white/80 backdrop-blur-sm text-[#6d6e6b] hover:bg-white shadow-lg transition-all"
           >
             <ChevronRight size={24} />
           </button>
@@ -71,7 +70,7 @@ export default function RichMediaGallery({ images }: RichMediaGalleryProps) {
             key={idx}
             onClick={() => setCurrentIndex(idx)}
             className={`relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all ${
-              currentIndex === idx ? 'border-[#5BB318] ring-2 ring-[#C2EABD]' : 'border-transparent opacity-60 hover:opacity-100'
+              currentIndex === idx ? 'border-[#a8d59d] ring-2 ring-[#d3f5ce]' : 'border-transparent opacity-60 hover:opacity-100'
             }`}
           >
             <Image 
@@ -96,7 +95,7 @@ export default function RichMediaGallery({ images }: RichMediaGalleryProps) {
           >
             <button 
               onClick={() => setFullscreen(false)}
-              className="absolute top-6 right-6 text-white hover:text-[#C2EABD] transition-colors z-[110]"
+              className="absolute top-6 right-6 text-white hover:text-[#d3f5ce] transition-colors z-[110]"
             >
               <X size={32} />
             </button>

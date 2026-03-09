@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import PhoneVerification from '@/lib/models/PhoneVerification';
-import Business from '@/lib/models/Business';
+import prisma from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/utils/auth';
 
 /**
@@ -15,8 +13,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-
     const body = await request.json();
     const { phoneNumber, code, businessId } = body;
 
@@ -28,20 +24,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Find verification record
-    const verification = await PhoneVerification.findOne({
-      phoneNumber,
-      code,
-      verified: false,
-      expiresAt: { $gt: new Date() }, // Not expired
-      businessId: businessId || undefined,
+    const verification = await prisma.phoneVerification.findFirst({
+      where: {
+        phoneNumber,
+        code,
+        verified: false,
+        expiresAt: { gt: new Date() }, // Not expired
+        businessId: businessId || null,
+      }
     });
 
     if (!verification) {
       // Increment attempts for rate limiting
-      await PhoneVerification.updateOne(
-        { phoneNumber, verified: false },
-        { $inc: { attempts: 1 } }
-      );
+      await prisma.phoneVerification.updateMany({
+        where: { phoneNumber, verified: false },
+        data: { attempts: { increment: 1 } }
+      });
 
       return NextResponse.json(
         { error: 'Invalid or expired verification code' },
@@ -58,16 +56,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Mark as verified
-    verification.verified = true;
-    verification.attempts += 1;
-    await verification.save();
+    await prisma.phoneVerification.update({
+      where: { id: verification.id },
+      data: {
+        verified: true,
+        attempts: { increment: 1 }
+      }
+    });
 
     // Update business mobile verification status if businessId provided
     if (businessId) {
-      const business = await Business.findById(businessId);
-      if (business && business.ownerId.toString() === auth.userId) {
-        business.mobileVerified = true;
-        await business.save();
+      const business = await prisma.business.findUnique({
+        where: { id: businessId }
+      });
+      
+      if (business && business.ownerId === auth.userId) {
+        await prisma.business.update({
+          where: { id: businessId },
+          data: { mobileVerified: true }
+        });
       }
     }
 
@@ -78,10 +85,11 @@ export async function POST(request: NextRequest) {
       },
       { status: 200 }
     );
-  } catch (error: any) {
-    console.error('Phone verification error:', error);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error('Unknown error');
+    console.error('Phone verification error:', err.message);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: err.message || 'Internal server error' },
       { status: 500 }
     );
   }

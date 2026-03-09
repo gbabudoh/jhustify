@@ -1,3 +1,32 @@
 @import "tailwindcss";
 
+@theme {
+  --color-brand-green: #d3f5ce;
+  --color-brand-gray: #6d6e6b;
+  --color-brand-green-dark: #a8d59d;
+  --color-brand-gray-dark: #4a4b49;
+}
 
+@layer base {
+  button,
+  a,
+  [role="button"],
+  select,
+  input[type="submit"],
+  input[type="button"],
+  .cursor-pointer {
+    cursor: pointer !important;
+  }
+
+  /* Ensure icons inside interactive elements or with pointer class show the pointer */
+  svg.cursor-pointer,
+  .cursor-pointer svg {
+    cursor: pointer !important;
+  }
+}
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+  }
+}

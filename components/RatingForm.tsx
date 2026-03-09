@@ -129,7 +129,7 @@ export default function RatingForm({
           rows={4}
           maxLength={1000}
           placeholder="Share your experience with this business..."
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#465362] focus:border-[#465362] resize-none"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6d6e6b] focus:border-[#6d6e6b] resize-none"
         />
         <p className="text-xs text-gray-500 mt-1">
           {comment.length}/1000 characters

@@ -18,10 +18,10 @@ export default function FormalizationProgress({ progress }: FormalizationProgres
   return (
     <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="font-bold text-[#465362] flex items-center gap-2">
-          <Target className="text-[#5BB318]" size={20} /> Road to Formalization
+        <h3 className="font-bold text-[#6d6e6b] flex items-center gap-2">
+          <Target className="text-[#a8d59d]" size={20} /> Road to Formalization
         </h3>
-        <span className="text-2xl font-black text-[#465362]">{progress}%</span>
+        <span className="text-2xl font-black text-[#6d6e6b]">{progress}%</span>
       </div>
 
       <div className="relative h-4 bg-gray-100 rounded-full mb-10 overflow-hidden">
@@ -29,7 +29,7 @@ export default function FormalizationProgress({ progress }: FormalizationProgres
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 1.5, ease: "easeOut" }}
-          className="h-full bg-gradient-to-r from-[#C2EABD] via-[#5BB318] to-blue-500 rounded-full relative"
+          className="h-full bg-gradient-to-r from-[#d3f5ce] via-[#a8d59d] to-blue-500 rounded-full relative"
         >
           <div className="absolute inset-0 bg-white/20 animate-pulse" />
         </motion.div>
@@ -41,12 +41,12 @@ export default function FormalizationProgress({ progress }: FormalizationProgres
           return (
             <div key={idx} className="flex flex-col items-center gap-2 group">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                isActive ? 'bg-[#5BB318] text-white shadow-lg' : 'bg-gray-100 text-gray-400'
+                isActive ? 'bg-[#a8d59d] text-white shadow-lg' : 'bg-gray-100 text-gray-400'
               }`}>
                 {isActive ? <CheckCircle2 size={16} /> : <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />}
               </div>
               <span className={`text-[10px] font-bold text-center uppercase tracking-tighter ${
-                isActive ? 'text-[#465362]' : 'text-gray-400'
+                isActive ? 'text-[#6d6e6b]' : 'text-gray-400'
               }`}>
                 {step.label}
               </span>

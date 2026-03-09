@@ -1,0 +1,329 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String              @id @default(uuid())
+  email              String              @unique
+  password           String
+  name               String
+  role               Role                @default(BUSINESS_OWNER)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  businesses         Business[]
+  banners            Banner[]
+  messagesSent       Message[]
+  phoneVerifications PhoneVerification[]
+  ratingsGiven       Rating[]
+  reviewsConducted   Verification[]      @relation("Reviewer")
+
+  @@map("users")
+}
+
+model Business {
+  id                          String              @id @default(uuid())
+  businessName                String
+  category                    String
+  classification              Classification
+  contactPersonName           String
+  contactNumber               String
+  email                       String
+  physicalAddress             String
+  country                     String
+  city                        String?
+  lat                         Float?
+  lng                         Float?
+  verificationStatus          VerificationStatus  @default(UNVERIFIED)
+  verificationTier            VerificationTier    @default(BASIC)
+  trustBadgeActive            Boolean             @default(false)
+  trustBadgeType              TrustBadgeType?
+  businessRepresentativePhoto String?
+  mobileVerified              Boolean             @default(false)
+  verificationId              String?             @unique
+  averageRating               Float               @default(0)
+  ratingCount                 Int                 @default(0)
+  views                       Int                 @default(0)
+
+  // Rich Data fields
+  socialLinks                 Json?               
+  paymentMethods              PaymentMethod[]
+  yearsInOperation            Int?
+  mediaGallery                String[]
+
+  // Formal Sector fields
+  taxClearanceStatus          Boolean             @default(false)
+  industryLicenses            String[]
+  employeeCount               String?
+  annualRevenueRange          String?
+  exportReadiness             Boolean             @default(false)
+
+  // New Fields from User Request
+  businessDescription         String?             @db.Text
+  offeredItems                Json?               // For products/services offered
+  businessType                BusinessType        @default(PRODUCT)
+
+  // Reputation & Social Impact
+  trustScore                  Int                 @default(0)
+  formalizationProgress       Int                 @default(0)
+  lastVerifiedAt              DateTime?
+  
+  ownerId                     String
+  owner                       User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  
+  createdAt                   DateTime            @default(now())
+  updatedAt                   DateTime            @updatedAt
+
+  messages                    Message[]
+  phoneVerifications          PhoneVerification[]
+  ratings                     Rating[]
+  subscription                Subscription?
+  verifications               Verification[]
+
+  @@index([businessName, category, physicalAddress])
+  @@index([verificationStatus, verificationTier])
+  @@index([country])
+  @@index([city])
+  @@map("businesses")
+}
+
+model Banner {
+  id              String         @id @default(uuid())
+  title           String         @db.VarChar(100)
+  description     String?        @db.VarChar(500)
+  imageUrl        String
+  linkUrl         String?
+  position        BannerPosition
+  costPrice       Float          @default(0)
+  startDate       DateTime
+  endDate         DateTime
+  isActive        Boolean        @default(true)
+  clickCount      Int            @default(0)
+  impressionCount Int            @default(0)
+  createdById     String?
+  createdBy       User?          @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([isActive, startDate, endDate])
+  @@index([position, isActive])
+  @@map("banners")
+}
+
+model Message {
+  id           String        @id @default(uuid())
+  businessId   String
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  fromEmail    String
+  fromName     String
+  fromPhone    String?
+  subject      String
+  message      String        @db.Text
+  status       MessageStatus @default(UNREAD)
+  readAt       DateTime?
+  repliedAt    DateTime?
+  replyMessage String?       @db.Text
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([businessId, status])
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+model PhoneVerification {
+  id           String    @id @default(uuid())
+  phoneNumber  String
+  code         String
+  businessId   String?
+  business     Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verified     Boolean   @default(false)
+  expiresAt    DateTime
+  attempts     Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([phoneNumber, verified])
+  @@index([expiresAt])
+  @@map("phone_verifications")
+}
+
+model Rating {
+  id               String   @id @default(uuid())
+  businessId       String
+  business         Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating           Int
+  comment          String?  @db.VarChar(1000)
+  sentimentSummary String?  @db.VarChar(500)
+  verified         Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([businessId, userId])
+  @@index([businessId, rating])
+  @@index([createdAt])
+  @@map("ratings")
+}
+
+model Subscription {
+  id                           String             @id @default(uuid())
+  businessId                   String             @unique
+  business                     Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  tier                         TierStatus         @default(BASIC)
+  status                       SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart           DateTime           @default(now())
+  currentPeriodEnd             DateTime
+  amount                       Float
+  currency                     String             @default("USD")
+  paymentMethod                String?
+  paymentGateway               String?
+  paymentGatewaySubscriptionId String?
+  lastPaymentDate              DateTime?
+  nextBillingDate              DateTime
+  createdAt                    DateTime           @default(now())
+  updatedAt                    DateTime           @updatedAt
+
+  @@index([businessId])
+  @@index([status])
+  @@index([nextBillingDate])
+  @@map("subscriptions")
+}
+
+model Verification {
+  id                        String             @id @default(uuid())
+  verificationId            String             @unique
+  businessId                String             @unique
+  business                  Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  status                    ApprovalStatus     @default(SUBMITTED)
+  classification            Classification
+  nationalIdSecureLink      String?
+  identityDocumentType      IdentityDocType?
+  registrationDocSecureLink String?
+  proofOfPresenceVideoLink  String?
+  proofOfPresencePhotos     String[]
+  businessBankName          String?
+  phoneVerified             Boolean            @default(false)
+  lat                       Float?
+  lng                       Float?
+  geoTimestamp              DateTime?
+  
+  // Automated checks using JSON
+  automatedChecks           Json?              
+  
+  reviewerNotes             String?            @db.Text
+  reviewerId                String?
+  reviewer                  User?              @relation("Reviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  reviewedAt                DateTime?
+  progressPercent           Int                @default(0)
+  nextStep                  String?
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
+
+  @@index([businessId])
+  @@index([verificationId])
+  @@index([status])
+  @@map("verifications")
+}
+
+// ENUMS
+
+enum Role {
+  BUSINESS_OWNER
+  CONSUMER
+  ADMIN
+  SUPER_ADMIN
+  TRUST_TEAM
+}
+
+enum Classification {
+  REGISTERED
+  UNREGISTERED
+}
+
+enum BusinessType {
+  PRODUCT
+  SERVICE
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  SUBMITTED
+  IN_REVIEW
+  VERIFIED
+  SUSPENDED
+  REJECTED
+}
+
+enum VerificationTier {
+  BASIC
+  VERIFIED
+  PREMIUM
+}
+
+enum TierStatus {
+  BASIC
+  VERIFIED
+  PREMIUM
+}
+
+enum TrustBadgeType {
+  INFORMAL
+  FORMAL
+  VERIFIED
+  COMMUNITY_TRUSTED
+}
+
+enum PaymentMethod {
+  MOBILE_MONEY
+  BANK_TRANSFER
+  CASH
+  CARD
+}
+
+enum BannerPosition {
+  MAIN_LEFT
+  TOP_RIGHT
+  MIDDLE_RIGHT
+  BOTTOM_RIGHT
+}
+
+enum MessageStatus {
+  UNREAD
+  READ
+  REPLIED
+  ARCHIVED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+  PAST_DUE
+}
+
+enum ApprovalStatus {
+  SUBMITTED
+  AUTO_CHECK_PASSED
+  AUTO_CHECK_FAILED
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum IdentityDocType {
+  PASSPORT
+  NIN
+  DRIVING_LICENSE
+}

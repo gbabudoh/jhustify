@@ -152,8 +152,8 @@ export default function PhoneVerification({
     <Card className={className}>
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-2">
-          <Phone className="text-[#465362]" size={20} />
-          <h3 className="text-lg font-semibold text-[#465362]">Verify Phone Number</h3>
+          <Phone className="text-[#6d6e6b]" size={20} />
+          <h3 className="text-lg font-semibold text-[#6d6e6b]">Verify Phone Number</h3>
         </div>
         <p className="text-sm text-gray-600">
           We'll send a verification code to <span className="font-medium">{phoneNumber}</span>
@@ -202,7 +202,7 @@ export default function PhoneVerification({
                 <button
                   type="button"
                   onClick={handleSendCode}
-                  className="text-[#465362] hover:underline font-medium"
+                  className="text-[#6d6e6b] hover:underline font-medium"
                   disabled={sendingCode}
                 >
                   Resend Code

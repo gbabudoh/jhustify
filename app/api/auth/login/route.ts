@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import User from '@/lib/models/User';
+import prisma from '@/lib/prisma';
+import bcrypt from 'bcryptjs';
 import { generateToken } from '@/lib/utils/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
-
     const body = await request.json();
     const { email, password } = body;
 
@@ -17,8 +15,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find user
-    const user = await User.findOne({ email });
+    // Find user using Prisma
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
     if (!user) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
@@ -26,8 +27,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify password
-    const isPasswordValid = await user.comparePassword(password);
+    // Verify password using bcrypt (since Mongoose comparePassword is gone)
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    
     if (!isPasswordValid) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     // Generate token
     const token = generateToken({
-      userId: user._id.toString(),
+      userId: user.id,
       email: user.email,
       role: user.role,
     });
@@ -46,16 +48,17 @@ export async function POST(request: NextRequest) {
       message: 'Login successful',
       token,
       user: {
-        id: user._id.toString(),
+        id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Login error:', error);
+    const message = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: message },
       { status: 500 }
     );
   }

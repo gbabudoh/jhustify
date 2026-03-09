@@ -1,64 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import Business from '@/lib/models/Business';
+import prisma from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/utils/auth';
 
 export async function GET(request: NextRequest) {
   try {
     const auth = await authenticateRequest(request);
-    if (!auth || auth.role !== 'ADMIN') {
+    if (!auth || (auth.role !== 'ADMIN' && auth.role !== 'SUPER_ADMIN')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    await connectDB();
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const status = searchParams.get('verificationStatus');
     const tier = searchParams.get('verificationTier');
+    const type = searchParams.get('businessType');
     const search = searchParams.get('search');
 
-    const query: any = {};
+    const where: import('@prisma/client').Prisma.BusinessWhereInput & { businessType?: string } = {};
     if (status) {
-      query.verificationStatus = status;
+      where.verificationStatus = status as import('@prisma/client').VerificationStatus;
     }
     if (tier) {
-      query.verificationTier = tier;
+      where.verificationTier = tier as import('@prisma/client').VerificationTier;
+    }
+    if (type) {
+      where.businessType = type;
     }
     if (search) {
-      query.$or = [
-        { businessName: new RegExp(search, 'i') },
-        { category: new RegExp(search, 'i') },
-        { email: new RegExp(search, 'i') },
+      where.OR = [
+        { businessName: { contains: search, mode: 'insensitive' } },
+        { category: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
       ];
     }
 
     const skip = (page - 1) * limit;
-    const businesses = await Business.find(query)
-      .populate('ownerId', 'name email')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    const total = await Business.countDocuments(query);
-
-    const businessesWithId = businesses.map((business: any) => {
-      const { _id, ownerId, ...rest } = business;
-      return {
-        ...rest,
-        id: _id?.toString(),
-        owner: ownerId ? {
-          id: ownerId._id?.toString(),
-          name: ownerId.name,
-          email: ownerId.email,
-        } : null,
-      };
-    });
+    
+    const [businesses, total] = await Promise.all([
+      prisma.business.findMany({
+        where,
+        include: {
+          owner: {
+            select: { id: true, name: true, email: true }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit
+      }),
+      prisma.business.count({ where })
+    ]);
 
     return NextResponse.json({
-      businesses: businessesWithId,
+      businesses,
       pagination: {
         page,
         limit,
@@ -66,10 +61,11 @@ export async function GET(request: NextRequest) {
         pages: Math.ceil(total / limit),
       },
     });
-  } catch (error: any) {
-    console.error('Admin businesses fetch error:', error);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error('Unknown error');
+    console.error('Admin businesses fetch error:', err.message);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: err.message || 'Internal server error' },
       { status: 500 }
     );
   }
@@ -78,48 +74,46 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const auth = await authenticateRequest(request);
-    if (!auth || auth.role !== 'ADMIN') {
+    if (!auth || (auth.role !== 'ADMIN' && auth.role !== 'SUPER_ADMIN')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
+    const body = (await request.json()) as Record<string, unknown>;
+    const { businessId, businessDescription, offeredItems, businessType, ...updates } = body;
 
-    const body = await request.json();
-    const { businessId, ...updates } = body;
-
-    if (!businessId) {
+    if (!businessId || typeof businessId !== 'string') {
       return NextResponse.json({ error: 'Business ID is required' }, { status: 400 });
     }
 
-    const business = await Business.findByIdAndUpdate(
-      businessId,
-      updates,
-      { new: true, runValidators: true }
-    ).populate('ownerId', 'name email');
+    const updateData: import('@prisma/client').Prisma.BusinessUpdateInput & { 
+      businessDescription?: string | null;
+      offeredItems?: import('@prisma/client').Prisma.InputJsonValue;
+      businessType?: string;
+    } = { ...updates as Record<string, unknown> };
 
-    if (!business) {
-      return NextResponse.json({ error: 'Business not found' }, { status: 404 });
-    }
+    if (businessDescription !== undefined) updateData.businessDescription = businessDescription as string;
+    if (offeredItems !== undefined) updateData.offeredItems = offeredItems as import('@prisma/client').Prisma.InputJsonValue;
+    if (businessType !== undefined) updateData.businessType = businessType as string;
 
-    const businessData = business.toObject();
-    const { _id, ownerId, ...rest } = businessData;
-    
+    const business = await prisma.business.update({
+      where: { id: businessId },
+      data: updateData,
+      include: {
+        owner: {
+          select: { id: true, name: true, email: true }
+        }
+      }
+    });
+
     return NextResponse.json({
-      business: {
-        ...rest,
-        id: _id?.toString(),
-        owner: ownerId ? {
-          id: ownerId._id?.toString(),
-          name: ownerId.name,
-          email: ownerId.email,
-        } : null,
-      },
+      business,
       message: 'Business updated successfully',
     });
-  } catch (error: any) {
-    console.error('Admin business update error:', error);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error('Unknown error');
+    console.error('Admin business update error:', err.message);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: err.message || 'Internal server error' },
       { status: 500 }
     );
   }
@@ -128,11 +122,9 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const auth = await authenticateRequest(request);
-    if (!auth || auth.role !== 'ADMIN') {
+    if (!auth || (auth.role !== 'ADMIN' && auth.role !== 'SUPER_ADMIN')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    await connectDB();
 
     const { searchParams } = new URL(request.url);
     const businessId = searchParams.get('businessId');
@@ -141,16 +133,16 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Business ID is required' }, { status: 400 });
     }
 
-    const business = await Business.findByIdAndDelete(businessId);
-    if (!business) {
-      return NextResponse.json({ error: 'Business not found' }, { status: 404 });
-    }
+    await prisma.business.delete({
+      where: { id: businessId }
+    });
 
     return NextResponse.json({ message: 'Business deleted successfully' });
-  } catch (error: any) {
-    console.error('Admin business delete error:', error);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error('Unknown error');
+    console.error('Admin business delete error:', err.message);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: err.message || 'Internal server error' },
       { status: 500 }
     );
   }

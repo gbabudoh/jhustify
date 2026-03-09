@@ -148,11 +148,11 @@ class EmailService {
           <style>
             body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background-color: #465362; color: white; padding: 20px; text-align: center; }
+            .header { background-color: #6d6e6b; color: white; padding: 20px; text-align: center; }
             .content { background-color: #f5f5f5; padding: 20px; margin-top: 20px; }
-            .message-box { background-color: white; padding: 15px; border-left: 4px solid #465362; margin: 20px 0; }
+            .message-box { background-color: white; padding: 15px; border-left: 4px solid #6d6e6b; margin: 20px 0; }
             .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-            .button { display: inline-block; padding: 10px 20px; background-color: #465362; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+            .button { display: inline-block; padding: 10px 20px; background-color: #6d6e6b; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }
           </style>
         </head>
         <body>

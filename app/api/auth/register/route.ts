@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import User from '@/lib/models/User';
+import prisma from '@/lib/prisma';
+import bcrypt from 'bcryptjs';
 import { generateToken } from '@/lib/utils/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
-
     const body = await request.json();
     const { email, password, name, role } = body;
 
@@ -18,11 +16,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate role
-    const validRoles = ['BUSINESS_OWNER', 'CONSUMER'];
-    const userRole = role && validRoles.includes(role) ? role : 'BUSINESS_OWNER';
+    const validRoles = ['BUSINESS_OWNER', 'CONSUMER', 'ADMIN', 'SUPER_ADMIN', 'TRUST_TEAM'] as const;
+    const isRoleValid = (r: string): r is (typeof validRoles)[number] => 
+      validRoles.includes(r as (typeof validRoles)[number]);
+    
+    const userRole = (role && isRoleValid(role) ? role : 'BUSINESS_OWNER');
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+    
     if (existingUser) {
       return NextResponse.json(
         { error: 'User already exists' },
@@ -30,19 +34,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create new user
-    const user = new User({
-      email,
-      password,
-      name,
-      role: userRole,
-    });
+    // Hash password (since we no longer have mongoose hooks)
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    await user.save();
+    // Create new user using Prisma
+    const user = await prisma.user.create({
+      data: {
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        name,
+        role: userRole as import('@prisma/client').Role,
+      },
+    });
 
     // Generate token
     const token = generateToken({
-      userId: user._id.toString(),
+      userId: user.id,
       email: user.email,
       role: user.role,
     });
@@ -52,7 +60,7 @@ export async function POST(request: NextRequest) {
         message: 'User created successfully',
         token,
         user: {
-          id: user._id.toString(),
+          id: user.id,
           email: user.email,
           name: user.name,
           role: user.role,
@@ -60,10 +68,11 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Registration error:', error);
+    const message = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: message },
       { status: 500 }
     );
   }

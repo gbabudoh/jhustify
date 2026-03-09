@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import Business from '@/lib/models/Business';
+import prisma from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { authenticateRequest } from '@/lib/utils/auth';
 
 /**
@@ -12,8 +12,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    await connectDB();
-
     // Handle both Promise and direct params (Next.js 15+ compatibility)
     const resolvedParams = params instanceof Promise ? await params : params;
     const businessId = resolvedParams.id;
@@ -25,17 +23,9 @@ export async function GET(
       );
     }
 
-    // Validate MongoDB ObjectId format
-    if (!businessId || businessId.length !== 24) {
-      return NextResponse.json(
-        { error: 'Invalid business ID format' },
-        { status: 400 }
-      );
-    }
-
-    const business = await Business.findById(businessId)
-      .select('businessName category classification contactPersonName contactNumber email physicalAddress country city businessRepresentativePhoto verificationStatus verificationTier trustBadgeActive trustBadgeType averageRating ratingCount')
-      .lean();
+    const business = await prisma.business.findUnique({
+      where: { id: businessId }
+    });
 
     if (!business) {
       return NextResponse.json(
@@ -44,25 +34,12 @@ export async function GET(
       );
     }
 
-    // Convert MongoDB _id to id for response
-    const businessData = business as any;
-    const { _id, ...rest } = businessData;
-
-    return NextResponse.json({
-      business: {
-        ...rest,
-        id: _id?.toString() || businessData._id?.toString(),
-      },
-    });
-  } catch (error: any) {
-    console.error('Business fetch error:', error);
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      params: params,
-    });
+    return NextResponse.json({ business });
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error('Unknown error');
+    console.error('Business fetch error:', err);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: err.message || 'Internal server error' },
       { status: 500 }
     );
   }
@@ -82,11 +59,14 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-
     // Handle both Promise and direct params (Next.js 15+ compatibility)
     const resolvedParams = params instanceof Promise ? await params : params;
-    const business = await Business.findById(resolvedParams.id);
+    const businessId = resolvedParams.id;
+
+    const business = await prisma.business.findUnique({
+      where: { id: businessId }
+    });
+
     if (!business) {
       return NextResponse.json(
         { error: 'Business not found' },
@@ -95,7 +75,7 @@ export async function PUT(
     }
 
     // Check ownership
-    if (business.ownerId.toString() !== auth.userId) {
+    if (business.ownerId !== auth.userId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -111,40 +91,65 @@ export async function PUT(
       city,
       businessRepresentativePhoto,
       verificationTier,
+      socialLinks,
+      paymentMethods,
+      mediaGallery,
+      yearsInOperation,
+      businessDescription,
+      offeredItems,
+      businessType,
     } = body;
 
-    // Update allowed fields
-    if (businessName) business.businessName = businessName;
-    if (category) business.category = category;
-    if (contactPersonName) business.contactPersonName = contactPersonName;
-    if (contactNumber) business.contactNumber = contactNumber;
-    if (email) business.email = email;
-    if (physicalAddress) business.physicalAddress = physicalAddress;
-    if (country) business.country = country;
-    if (city !== undefined) business.city = city;
-    if (businessRepresentativePhoto) business.businessRepresentativePhoto = businessRepresentativePhoto;
+    // Define an extended type to handle potentially unsynced Prisma types while satisfying ESLint
+    interface ExtendedUpdateInput extends Prisma.BusinessUpdateInput {
+      businessDescription?: string | null;
+      offeredItems?: Prisma.InputJsonValue;
+      businessType?: string;
+    }
+
+    const updateData: ExtendedUpdateInput = {};
+    
+    if (businessName !== undefined) updateData.businessName = businessName;
+    if (category !== undefined) updateData.category = category;
+    if (contactPersonName !== undefined) updateData.contactPersonName = contactPersonName;
+    if (contactNumber !== undefined) updateData.contactNumber = contactNumber;
+    if (email !== undefined) updateData.email = email;
+    if (physicalAddress !== undefined) updateData.physicalAddress = physicalAddress;
+    if (country !== undefined) updateData.country = country;
+    if (city !== undefined) updateData.city = city;
+    if (businessRepresentativePhoto !== undefined) updateData.businessRepresentativePhoto = businessRepresentativePhoto;
+    if (socialLinks !== undefined) updateData.socialLinks = socialLinks as import('@prisma/client').Prisma.InputJsonValue;
+    if (paymentMethods !== undefined) updateData.paymentMethods = paymentMethods as import('@prisma/client').PaymentMethod[];
+    if (mediaGallery !== undefined) updateData.mediaGallery = mediaGallery;
+    if (yearsInOperation !== undefined) updateData.yearsInOperation = yearsInOperation ? parseInt(String(yearsInOperation)) : null;
+    if (businessDescription !== undefined) updateData.businessDescription = businessDescription;
+    if (offeredItems !== undefined) updateData.offeredItems = offeredItems as Prisma.InputJsonValue;
+    if (businessType !== undefined) updateData.businessType = String(businessType);
     if (verificationTier && (verificationTier === 'BASIC' || verificationTier === 'PREMIUM')) {
-      business.verificationTier = verificationTier;
-      // If upgrading to PREMIUM, also update trust badge to VERIFIED
+      updateData.verificationTier = verificationTier as import('@prisma/client').VerificationTier;
       if (verificationTier === 'PREMIUM') {
-        business.trustBadgeType = 'VERIFIED';
-        business.trustBadgeActive = true;
+        updateData.trustBadgeType = 'VERIFIED' as import('@prisma/client').TrustBadgeType;
+        updateData.trustBadgeActive = true;
       }
     }
 
-    await business.save();
+    const updatedBusiness = await prisma.business.update({
+      where: { id: businessId },
+      data: updateData as unknown as Prisma.BusinessUpdateInput
+    });
 
     return NextResponse.json({
       message: 'Business updated successfully',
       business: {
-        id: business._id,
-        businessName: business.businessName,
+        id: updatedBusiness.id,
+        businessName: updatedBusiness.businessName,
       },
     });
-  } catch (error: any) {
-    console.error('Business update error:', error);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error('Unknown error');
+    console.error('Business update error:', err);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: err.message || 'Internal server error' },
       { status: 500 }
     );
   }
@@ -164,11 +169,14 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-
     // Handle both Promise and direct params (Next.js 15+ compatibility)
     const resolvedParams = params instanceof Promise ? await params : params;
-    const business = await Business.findById(resolvedParams.id);
+    const businessId = resolvedParams.id;
+
+    const business = await prisma.business.findUnique({
+      where: { id: businessId }
+    });
+
     if (!business) {
       return NextResponse.json(
         { error: 'Business not found' },
@@ -177,19 +185,61 @@ export async function DELETE(
     }
 
     // Check ownership
-    if (business.ownerId.toString() !== auth.userId) {
+    if (business.ownerId !== auth.userId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await business.deleteOne();
+    await prisma.business.delete({
+      where: { id: businessId }
+    });
 
     return NextResponse.json({
       message: 'Business deleted successfully',
     });
-  } catch (error: any) {
-    console.error('Business delete error:', error);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error('Unknown error');
+    console.error('Business delete error:', err);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: err.message || 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PATCH /api/business/[id]
+ * Specifically for incrementing views or toggle small fields
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+) {
+  try {
+    const resolvedParams = params instanceof Promise ? await params : params;
+    const businessId = resolvedParams.id;
+    
+    const { action } = await request.json();
+
+    if (action === 'increment_views') {
+      await prisma.business.update({
+        where: { id: businessId },
+        data: {
+          // @ts-expect-error - views field added in recent migration, types might not be updated yet
+          views: {
+            increment: 1
+          }
+        }
+      });
+
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error('Unknown error');
+    console.error('Business patch error:', err.message);
+    return NextResponse.json(
+      { error: err.message || 'Internal server error' },
       { status: 500 }
     );
   }

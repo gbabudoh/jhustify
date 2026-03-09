@@ -32,10 +32,10 @@ export default function Button({
   const baseClasses = 'inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
   
   const variantClasses = {
-    primary: 'bg-[#465362] text-white hover:bg-[#3a4550] focus:ring-[#465362]',
-    secondary: 'bg-[#C2EABD] text-[#465362] hover:bg-[#D9F8D4] focus:ring-[#C2EABD]',
-    outline: 'border-2 border-[#465362] text-[#465362] hover:bg-[#465362] hover:text-white focus:ring-[#465362]',
-    ghost: 'text-[#465362] hover:bg-[#F5F5F5] focus:ring-[#465362]',
+    primary: 'bg-[#6d6e6b] text-white hover:bg-[#4a4b49] focus:ring-[#6d6e6b] shadow-md hover:shadow-lg',
+    secondary: 'bg-[#d3f5ce] text-[#6d6e6b] hover:bg-[#c2e5bc] focus:ring-[#d3f5ce] shadow-sm hover:shadow-md',
+    outline: 'border-2 border-[#6d6e6b]/30 text-[#6d6e6b] hover:bg-[#6d6e6b] hover:text-white focus:ring-[#6d6e6b]',
+    ghost: 'text-[#6d6e6b] hover:bg-[#d3f5ce]/20 focus:ring-[#d3f5ce]',
   };
 
   const sizeClasses = {

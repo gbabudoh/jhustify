@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Upload, CheckCircle2, AlertCircle, CreditCard, Shield } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, AlertCircle, CreditCard, Shield } from 'lucide-react';
+import Image from 'next/image';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Card from '@/components/ui/Card';
@@ -10,6 +11,26 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import TrustBadge from '@/components/TrustBadge';
+
+interface BusinessData {
+  businessName: string;
+  classification: string;
+  contactPersonName: string;
+  contactNumber: string;
+  physicalAddress: string;
+  city?: string;
+  country?: string;
+  category: string;
+  businessRepresentativePhoto?: string;
+  trustBadgeType?: "VERIFIED" | "INFORMAL" | "FORMAL" | "COMMUNITY_TRUSTED" | undefined;
+}
+
+interface VerificationData {
+  nationalIdSecureLink?: string;
+  registrationDocSecureLink?: string;
+  identityDocumentType?: string;
+  businessBankName?: string;
+}
 
 export default function UpgradeBusinessPage() {
   const params = useParams();
@@ -19,8 +40,8 @@ export default function UpgradeBusinessPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [business, setBusiness] = useState<any>(null);
-  const [verification, setVerification] = useState<any>(null);
+  const [business, setBusiness] = useState<BusinessData | null>(null);
+  const [verification, setVerification] = useState<VerificationData | null>(null);
   
   // Form data for verification documents
   const [formData, setFormData] = useState({
@@ -31,7 +52,6 @@ export default function UpgradeBusinessPage() {
   const [selectedFiles, setSelectedFiles] = useState({
     identityDocument: null as File | null,
   });
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBusinessData = async () => {
@@ -55,11 +75,6 @@ export default function UpgradeBusinessPage() {
 
         const businessData = await businessResponse.json();
         setBusiness(businessData.business);
-
-        // Pre-populate form with existing business data
-        if (businessData.business.businessRepresentativePhoto) {
-          setPhotoPreview(businessData.business.businessRepresentativePhoto);
-        }
 
         // Check if verification already exists
         const verificationResponse = await fetch(`/api/verification/status?businessId=${businessId}`, {
@@ -88,8 +103,12 @@ export default function UpgradeBusinessPage() {
             }
           }
         }
-      } catch (err: any) {
-        setError(err.message || 'Failed to load business data');
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message || 'Failed to load business data');
+        } else {
+          setError('Failed to load business data');
+        }
       } finally {
         setLoading(false);
       }
@@ -114,6 +133,12 @@ export default function UpgradeBusinessPage() {
       const token = localStorage.getItem('token');
       if (!token) {
         router.push('/login');
+        return;
+      }
+
+      if (!business) {
+        setError('Business data is missing');
+        setSubmitting(false);
         return;
       }
 
@@ -202,12 +227,16 @@ export default function UpgradeBusinessPage() {
         throw new Error('Failed to update business tier');
       }
 
-      // TODO: Process payment for premium upgrade (₦1,200/month)
+      // TODO: Process payment for premium upgrade (₦1,200/year)
       // After payment confirmation, activate the Verified badge
       // For now, redirect to verification page to show status
       router.push(`/dashboard/business/${businessId}/verify?upgrade=success`);
-    } catch (err: any) {
-      setError(err.message || 'Failed to upgrade business');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || 'Failed to upgrade business');
+      } else {
+        setError('Failed to upgrade business');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -246,7 +275,6 @@ export default function UpgradeBusinessPage() {
     );
   }
 
-  const hasExistingDocs = verification?.nationalIdSecureLink || verification?.registrationDocSecureLink;
   const needsIdentityDoc = !selectedFiles.identityDocument && !verification?.nationalIdSecureLink;
   const needsBankInfo = !formData.businessBankName;
 
@@ -285,7 +313,7 @@ export default function UpgradeBusinessPage() {
                   <TrustBadge type="VERIFIED" size="md" />
                 </div>
                 <p className="text-sm text-gray-700 mt-2">
-                  Upgrade to Verified badge for ₦1,200/month
+                  Upgrade to Verified badge for ₦1,200/year
                 </p>
               </div>
             </div>
@@ -326,10 +354,12 @@ export default function UpgradeBusinessPage() {
               {business.businessRepresentativePhoto && (
                 <div className="md:col-span-2">
                   <p className="text-gray-600 mb-2">Business Representative Photo</p>
-                  <img
-                    src={business.businessRepresentativePhoto}
+                  <Image
+                    src={business.businessRepresentativePhoto as string}
                     alt="Business representative"
-                    className="w-32 h-32 object-cover rounded-lg"
+                    width={128}
+                    height={128}
+                    className="object-cover rounded-lg"
                   />
                 </div>
               )}
@@ -358,7 +388,7 @@ export default function UpgradeBusinessPage() {
                       { value: 'DRIVING_LICENSE', label: 'Driving License' },
                     ]}
                     value={formData.identityDocumentType}
-                    onChange={(e) => setFormData({ ...formData, identityDocumentType: e.target.value as any })}
+                    onChange={(e) => setFormData({ ...formData, identityDocumentType: e.target.value as 'PASSPORT' | 'NIN' | 'DRIVING_LICENSE' | '' })}
                     required
                   />
                   
@@ -417,7 +447,7 @@ export default function UpgradeBusinessPage() {
                     <div>
                       <h3 className="font-semibold text-blue-800 mb-1">Phone Verification Required</h3>
                       <p className="text-sm text-blue-700 mb-3">
-                        You'll need to verify your phone number ({business.contactNumber}) via SMS to complete the upgrade.
+                        You&apos;ll need to verify your phone number ({business.contactNumber as string}) via SMS to complete the upgrade.
                       </p>
                       <p className="text-xs text-blue-600">
                         Phone verification will be required after document submission.
@@ -434,7 +464,7 @@ export default function UpgradeBusinessPage() {
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-700">Verified Badge Subscription</span>
-                  <span className="font-bold text-[#465362]">₦1,200/month</span>
+                  <span className="font-bold text-[#465362]">₦1,200/year</span>
                 </div>
                 <div className="pt-3 border-t border-yellow-200">
                   <p className="text-sm text-gray-600">

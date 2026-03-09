@@ -1,35 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import User from '@/lib/models/User';
-import Business from '@/lib/models/Business';
-import Verification from '@/lib/models/Verification';
-import Message from '@/lib/models/Message';
-import Rating from '@/lib/models/Rating';
-import Subscription from '@/lib/models/Subscription';
-import Banner from '@/lib/models/Banner';
+import prisma from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/utils/auth';
 
 export async function GET(request: NextRequest) {
   try {
     const auth = await authenticateRequest(request);
-    if (!auth) {
+    if (!auth || (auth.role !== 'ADMIN' && auth.role !== 'SUPER_ADMIN')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (auth.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 });
-    }
-
-    await connectDB();
-
-    const [users, businesses, verifications, messages, ratings, subscriptions, banners] = await Promise.all([
-      User.countDocuments(),
-      Business.countDocuments(),
-      Verification.countDocuments(),
-      Message.countDocuments(),
-      Rating.countDocuments(),
-      Subscription.countDocuments(),
-      Banner.countDocuments(),
+    const [
+      users,
+      businesses,
+      verifications,
+      messages,
+      ratings,
+      subscriptions,
+      banners,
+      revenueResult
+    ] = await Promise.all([
+      prisma.user.count(),
+      prisma.business.count(),
+      prisma.verification.count(),
+      prisma.message.count(),
+      prisma.rating.count(),
+      prisma.subscription.count(),
+      prisma.banner.count(),
+      prisma.subscription.aggregate({
+        _sum: {
+          amount: true,
+        },
+      }),
     ]);
 
     return NextResponse.json({
@@ -40,11 +41,13 @@ export async function GET(request: NextRequest) {
       ratings,
       subscriptions,
       banners,
+      revenue: revenueResult._sum.amount || 0,
     });
-  } catch (error: any) {
-    console.error('Admin stats error:', error);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error('Unknown error');
+    console.error('Admin stats error:', err.message);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: err.message || 'Internal server error' },
       { status: 500 }
     );
   }

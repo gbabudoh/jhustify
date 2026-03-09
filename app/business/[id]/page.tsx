@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { MapPin, Phone, Building2, MessageSquare, ArrowLeft, Star, Instagram, Linkedin, Facebook, CreditCard, Clock, ShieldCheck, ExternalLink, Globe } from 'lucide-react';
+import { MapPin, Phone, Building2, MessageSquare, ArrowLeft, Star, Instagram, Linkedin, Facebook, CreditCard, Clock, ShieldCheck, Globe, X, Send, Zap } from 'lucide-react';
 import Header from '@/components/Header';
 import Card from '@/components/ui/Card';
 import TrustBadge from '@/components/TrustBadge';
@@ -44,6 +45,9 @@ interface Business {
   trustScore?: number;
   formalizationProgress?: number;
   mediaGallery?: string[];
+  businessDescription?: string;
+  businessType?: 'PRODUCT' | 'SERVICE';
+  offeredItems?: string[];
 }
 
 interface Rating {
@@ -106,6 +110,19 @@ export default function BusinessProfilePage() {
     }
   }, []);
 
+  const incrementViews = useCallback(async () => {
+    try {
+      if (!params.id) return;
+      await fetch(`/api/business/${params.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'increment_views' })
+      });
+    } catch (error) {
+      console.error('Error incrementing views:', error);
+    }
+  }, [params.id]);
+
   const fetchBusiness = useCallback(async () => {
     try {
       const response = await fetch(`/api/business/${params.id}`);
@@ -118,13 +135,15 @@ export default function BusinessProfilePage() {
       }
       
       setBusiness(data.business);
+      // Increment views count after successful load
+      incrementViews();
     } catch (error) {
       console.error('Error fetching business:', error);
       setBusiness(null);
     } finally {
       setLoading(false);
     }
-  }, [params.id]);
+  }, [params.id, incrementViews]);
 
   const fetchRatings = useCallback(async () => {
     if (!params.id) return;
@@ -288,13 +307,30 @@ export default function BusinessProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5]">
-      <Header />
+    <div className="min-h-screen bg-[#F5F5F5] pb-20">
+      {/* Desktop Header ONLY */}
+      <div className="hidden md:block">
+        <Header />
+      </div>
       
-      <div className="container mx-auto px-4 py-8">
+      {/* Mobile Native App Bar */}
+      <div className="md:hidden sticky top-0 bg-white/90 backdrop-blur-xl border-b border-gray-100 z-40 px-4 py-3 pb-safe flex items-center justify-between">
+         <button 
+           onClick={() => router.back()}
+           className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-[#465362]"
+         >
+           <ArrowLeft size={20} />
+         </button>
+         <span className="font-bold text-[#465362] text-sm truncate max-w-[200px]">
+           {business.businessName}
+         </span>
+         <div className="w-10" /> {/* Spacer for centering */}
+      </div>
+      
+      <div className="container mx-auto px-0 md:px-4 py-0 md:py-8">
         <div className="max-w-4xl mx-auto">
-          {/* Back to Listing Button */}
-          <div className="mb-4">
+          {/* Desktop Back to Listing Button */}
+          <div className="hidden md:flex mb-4">
             <Link href="/search">
               <button className="flex items-center gap-2 text-[#465362] hover:text-[#2d3748] transition-colors">
                 <ArrowLeft size={20} />
@@ -306,21 +342,38 @@ export default function BusinessProfilePage() {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Left Column: Media & Core Info */}
             <div className="lg:col-span-2 space-y-8">
-              <Card className="p-0 overflow-hidden border-none shadow-xl">
-                <RichMediaGallery images={business.mediaGallery || []} />
+              <Card className="p-0 overflow-hidden border-none shadow-xl rounded-none md:rounded-3xl">
+                <RichMediaGallery images={[
+                  ...(business.businessRepresentativePhoto ? [business.businessRepresentativePhoto] : []),
+                  ...(business.mediaGallery || [])
+                ]} />
                 <div className="p-6">
-                  <div className="flex justify-between items-start mb-6">
-                    <div>
-                      <h1 className="text-4xl font-black text-[#465362] mb-2">{business.businessName}</h1>
-                      <div className="flex items-center gap-4 text-gray-500 font-medium">
-                        <span className="flex items-center gap-1"><Building2 size={16} /> {business.category}</span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1"><Clock size={16} /> {business.yearsInOperation || 2}+ Years in Operation</span>
+                  <div className="flex flex-col md:flex-row md:justify-between items-center md:items-start gap-6 mb-8 text-center md:text-left">
+                    <div className="flex flex-col items-center md:items-start w-full">
+                      <h1 className="text-3xl md:text-4xl font-black text-[#465362] mb-3 leading-tight break-words">{business.businessName}</h1>
+                      <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-sm md:text-base text-gray-500 font-medium">
+                        <span className="flex items-center justify-center gap-1 text-center"><Building2 size={16} /> {business.category}</span>
+                        <span className="hidden sm:inline text-gray-300">•</span>
+                        <span className="flex items-center justify-center gap-1 text-center"><Clock size={16} /> {business.yearsInOperation || 0}+ Years in Operation</span>
                       </div>
                     </div>
-                    {business.trustBadgeActive && (
-                      <TrustBadge type={business.trustBadgeType} size="lg" />
-                    )}
+                    <div className="shrink-0 flex flex-col items-center gap-2 w-full md:w-auto">
+                      <TrustBadge 
+                        type={
+                          business.verificationTier === 'PREMIUM' ? 'JHUSTIFIED' : 
+                          business.classification === 'UNREGISTERED' ? 'INFORMAL' :
+                          (business.trustBadgeType || 'COMMUNITY_TRUSTED')
+                        } 
+                        size="lg" 
+                      />
+                      {business.classification === 'UNREGISTERED' && (
+                        <div className="bg-white/50 p-0.5 rounded-full border border-gray-100 shadow-sm">
+                          <span className="bg-[#d4f6cf] text-[#465362] text-[9px] md:text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tight border-2 border-white block">
+                            (informal)
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="grid md:grid-cols-2 gap-6 bg-gray-50 p-6 rounded-3xl">
@@ -329,20 +382,20 @@ export default function BusinessProfilePage() {
                         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
                           <MapPin size={18} className="text-[#465362]" />
                         </div>
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Location</p>
-                          <p className="text-[#465362] font-semibold">{business.physicalAddress}</p>
-                          <p className="text-sm text-gray-500">{business.city}, {business.country}</p>
+                          <p className="text-[#465362] font-semibold break-words">{business.physicalAddress}</p>
+                          <p className="text-sm text-gray-500 break-words">{business.city}{business.country ? `, ${business.country}` : ''}</p>
                         </div>
                       </div>
                       <div className="flex items-start gap-3">
                         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
                           <Phone size={18} className="text-[#465362]" />
                         </div>
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Contact</p>
-                          <p className="text-[#465362] font-semibold">{business.contactNumber}</p>
-                          <p className="text-sm text-gray-500">{business.contactPersonName}</p>
+                          <p className="text-[#465362] font-semibold break-words">{business.contactNumber}</p>
+                          <p className="text-sm text-gray-500 break-words">{business.contactPersonName}</p>
                         </div>
                       </div>
                     </div>
@@ -351,14 +404,18 @@ export default function BusinessProfilePage() {
                         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
                           <CreditCard size={18} className="text-[#465362]" />
                         </div>
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Payments</p>
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {(business.paymentMethods || ['Mobile Money', 'Cash']).map((method, idx) => (
-                              <span key={idx} className="bg-white px-2 py-0.5 rounded-lg text-[10px] font-bold text-[#465362] border border-gray-100 uppercase">
-                                {method}
-                              </span>
-                            ))}
+                            {business.paymentMethods && business.paymentMethods.length > 0 ? (
+                              business.paymentMethods.map((method, idx) => (
+                                <span key={idx} className="bg-white px-2 py-0.5 rounded-lg text-[10px] font-bold text-[#465362] border border-gray-100 uppercase break-words">
+                                  {method.replace('_', ' ')}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-gray-400 italic">No payment methods specified</span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -366,9 +423,9 @@ export default function BusinessProfilePage() {
                         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
                           <Globe size={18} className="text-[#465362]" />
                         </div>
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Social Presence</p>
-                          <div className="flex gap-3 mt-1">
+                          <div className="flex flex-wrap gap-3 mt-1">
                             {business.socialLinks?.instagram && (
                               <a 
                                 href={business.socialLinks.instagram} 
@@ -402,7 +459,18 @@ export default function BusinessProfilePage() {
                                 <Linkedin size={20} />
                               </a>
                             )}
-                            {(!business.socialLinks || (!business.socialLinks.instagram && !business.socialLinks.facebook && !business.socialLinks.linkedin)) && (
+                            {business.socialLinks?.whatsapp && (
+                              <a 
+                                href={`https://wa.me/${business.socialLinks.whatsapp.replace(/\D/g, '')}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="text-emerald-600 hover:scale-110 transition-transform"
+                                title="WhatsApp"
+                              >
+                                <MessageSquare size={20} />
+                              </a>
+                            )}
+                            {(!business.socialLinks || (!business.socialLinks.instagram && !business.socialLinks.facebook && !business.socialLinks.linkedin && !business.socialLinks.whatsapp)) && (
                               <span className="text-xs text-gray-400 italic">No social links added</span>
                             )}
                           </div>
@@ -410,6 +478,35 @@ export default function BusinessProfilePage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* About Section */}
+                  <div className="mt-10 mb-10 pt-10 border-t border-gray-100">
+                    <h2 className="text-xl font-black text-[#465362] uppercase tracking-wider mb-4 flex items-center gap-2">
+                       <ShieldCheck className="text-blue-600" size={24} />
+                       About this Business
+                    </h2>
+                    <p className="text-[#465362] leading-relaxed font-medium">
+                      {business.businessDescription || `Welcome to ${business.businessName}. We are dedicated to providing the best ${business.category.toLowerCase()} experience in ${business.city}.`}
+                    </p>
+                  </div>
+
+                  {/* Specialized Offerings */}
+                  {business.offeredItems && business.offeredItems.length > 0 && (
+                    <div className="mb-10 pt-10 border-t border-gray-100">
+                      <h2 className="text-xl font-black text-[#465362] uppercase tracking-wider mb-4 flex items-center gap-2">
+                         <Star className="text-amber-500" size={24} />
+                         {business.businessType === 'PRODUCT' ? 'Products & Catalog' : 'Services & Offerings'}
+                      </h2>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {business.offeredItems.map((item, idx) => (
+                          <div key={idx} className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-transparent hover:border-blue-200 transition-all group">
+                            <div className="w-2 h-2 rounded-full bg-blue-600 group-hover:scale-150 transition-transform"></div>
+                            <span className="text-[#465362] font-bold">{item}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Card>
 
@@ -449,7 +546,7 @@ export default function BusinessProfilePage() {
                       Fast Contact
                     </Button>
                     <a 
-                      href={business.contactNumber ? `https://wa.me/${business.contactNumber.replace(/\+/g, '')}` : '#'} 
+                      href={business.contactNumber ? `https://wa.me/${business.contactNumber.replace(/\D/g, '')}` : '#'} 
                       target="_blank" 
                       rel="noopener noreferrer" 
                       className="flex-1"
@@ -489,11 +586,19 @@ export default function BusinessProfilePage() {
               <FormalizationProgress progress={business.formalizationProgress || 35} />
 
               {/* Contextual Sidebar Ad (Soft Ad) */}
-              <div className="bg-white rounded-3xl p-6 border-2 border-dashed border-gray-100 flex flex-col items-center text-center group">
-                <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <ExternalLink size={32} className="text-gray-300" />
+              <div className="bg-white rounded-3xl p-6 border-2 border-dashed border-gray-100 flex flex-col items-center text-center group relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50/50 rounded-bl-full -z-10"></div>
+                
+                <div className="w-20 h-20 mb-4 group-hover:scale-110 transition-transform relative drop-shadow-sm">
+                  <Image 
+                    src="/images/partners/standard-trust-bank.png" 
+                    alt="Standard Trust Bank Logo" 
+                    fill 
+                    className="object-contain"
+                  />
                 </div>
-                <span className="text-[10px] font-black text-[#5BB318] uppercase tracking-widest mb-2">Partner Connection</span>
+                
+                <span className="text-[10px] font-black text-[#5BB318] uppercase tracking-widest mb-2 bg-[#5BB318]/10 px-2 py-1 rounded-full">Partner of the Month</span>
                 <p className="font-bold text-[#465362] mb-1">Need Capital to Grow?</p>
                 <p className="text-xs text-gray-500 mb-6">Standard Trust Bank offers special rates for Jhustify-verified businesses.</p>
                 <button className="w-full py-3 bg-[#465362] text-white rounded-xl text-sm font-bold hover:bg-[#343e49] transition-all">
@@ -504,59 +609,119 @@ export default function BusinessProfilePage() {
           </div>
 
           {showContactForm && isAuthenticated && userRole === 'CONSUMER' && (
-            <Card>
-              <h2 className="text-xl font-semibold text-[#465362] mb-4">Contact Business</h2>
-              
-              {messageSuccess && (
-                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4">
-                  Message sent successfully! The business owner will receive your message.
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <div 
+                className="absolute inset-0 bg-[#465362]/60 backdrop-blur-sm transition-opacity" 
+                onClick={() => setShowContactForm(false)}
+              />
+              <Card className="relative z-10 w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+                <div className="bg-[#465362] p-6 text-white flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-black uppercase tracking-wider flex items-center gap-2 text-white">
+                      <MessageSquare size={24} />
+                      Fast Contact
+                    </h2>
+                    <p className="text-xs text-gray-300 font-medium">Messaging {business.businessName}</p>
+                  </div>
+                  <button 
+                    onClick={() => setShowContactForm(false)}
+                    className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
                 </div>
-              )}
 
-              {messageError && (
-                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4">
-                  {messageError}
-                </div>
-              )}
+                <div className="p-6">
+                  {messageSuccess ? (
+                    <div className="text-center py-12 animate-in fade-in scale-in duration-300">
+                      <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600">
+                        <ShieldCheck size={48} />
+                      </div>
+                      <h3 className="text-2xl font-black text-[#465362] mb-2 uppercase tracking-tight">Message Delivered!</h3>
+                      <p className="text-gray-500 font-medium mb-8">Your inquiry has been sent to the business owner.</p>
+                      <Button variant="primary" onClick={() => setShowContactForm(false)} className="w-full">
+                        Close Modal
+                      </Button>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSendMessage} className="space-y-5">
+                      {messageError && (
+                        <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-2xl text-sm font-bold flex items-center gap-2">
+                          <X size={16} /> {messageError}
+                        </div>
+                      )}
 
-              <form onSubmit={handleSendMessage} className="space-y-4">
-                <input
-                  type="tel"
-                  placeholder="Your Phone (Optional)"
-                  value={message.phone}
-                  onChange={(e) => setMessage({ ...message, phone: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-lg border border-[#D6D9DD] focus:border-[#465362] focus:ring-2 focus:ring-[#C2EABD]"
-                />
-                <input
-                  type="text"
-                  placeholder="Subject"
-                  value={message.subject}
-                  onChange={(e) => setMessage({ ...message, subject: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-lg border border-[#D6D9DD] focus:border-[#465362] focus:ring-2 focus:ring-[#C2EABD]"
-                  required
-                />
-                <textarea
-                  placeholder="Your Message"
-                  value={message.message}
-                  onChange={(e) => setMessage({ ...message, message: e.target.value })}
-                  rows={5}
-                  className="w-full px-4 py-2.5 rounded-lg border border-[#D6D9DD] focus:border-[#465362] focus:ring-2 focus:ring-[#C2EABD]"
-                  required
-                />
-                <div className="flex gap-4">
-                  <Button type="submit" variant="primary" isLoading={sendingMessage} disabled={sendingMessage}>
-                    {sendingMessage ? 'Sending...' : 'Send Message'}
-                  </Button>
-                  <Button type="button" variant="ghost" onClick={() => {
-                    setShowContactForm(false);
-                    setMessageError('');
-                    setMessageSuccess(false);
-                  }}>
-                    Cancel
-                  </Button>
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Quick Templates</label>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            "Is this still available?",
+                            "I'd like a price quote.",
+                            "What are your hours?",
+                            "Where are you located?"
+                          ].map((tmpl) => (
+                            <button
+                              key={tmpl}
+                              type="button"
+                              onClick={() => setMessage({ ...message, subject: `Inquiry: ${tmpl}`, message: `Hello, I'm interested in your business. ${tmpl}` })}
+                              className="px-3 py-1.5 rounded-full bg-gray-50 border border-gray-100 text-[11px] font-bold text-[#465362] hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all flex items-center gap-1"
+                            >
+                              <Zap size={10} fill="currentColor" /> {tmpl}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 pt-2">
+                        <div className="relative group">
+                          <input
+                            type="text"
+                            placeholder="Subject"
+                            value={message.subject}
+                            onChange={(e) => setMessage({ ...message, subject: e.target.value })}
+                            className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-[#465362] transition-all outline-none text-[#465362] font-semibold placeholder:text-gray-400 ring-0 focus:ring-4 focus:ring-[#465362]/5"
+                            required
+                            autoFocus
+                          />
+                        </div>
+                        <div className="relative group">
+                          <textarea
+                            placeholder="Your Message"
+                            value={message.message}
+                            onChange={(e) => setMessage({ ...message, message: e.target.value })}
+                            rows={4}
+                            className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-[#465362] transition-all outline-none text-[#465362] font-semibold placeholder:text-gray-400 ring-0 focus:ring-4 focus:ring-[#465362]/5 resize-none"
+                            required
+                          />
+                        </div>
+                        <div className="relative group">
+                          <input
+                            type="tel"
+                            placeholder="Your Phone Number (Optional)"
+                            value={message.phone}
+                            onChange={(e) => setMessage({ ...message, phone: e.target.value })}
+                            className="w-full px-5 py-3.5 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-[#465362] transition-all outline-none text-[#465362] font-semibold placeholder:text-gray-400 ring-0 focus:ring-4 focus:ring-[#465362]/5"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3 pt-2">
+                        <Button 
+                          type="submit" 
+                          variant="primary" 
+                          isLoading={sendingMessage} 
+                          disabled={sendingMessage}
+                          className="flex-1 py-4 text-lg font-black shadow-lg shadow-[#5BB318]/20"
+                        >
+                          <Send size={20} className="mr-2" />
+                          {sendingMessage ? 'SENDING...' : 'SEND INQUIRY'}
+                        </Button>
+                      </div>
+                    </form>
+                  )}
                 </div>
-              </form>
-            </Card>
+              </Card>
+            </div>
           )}
 
           {/* Ratings Section */}
@@ -692,4 +857,3 @@ export default function BusinessProfilePage() {
     </div>
   );
 }
-

@@ -22,10 +22,10 @@ export default function VerifiedCommunication() {
             transition={{ duration: 0.6 }}
             className="text-center"
           >
-            <div className="w-20 h-20 rounded-full bg-[#C2EABD] flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="text-[#465362]" size={40} />
+            <div className="w-20 h-20 rounded-full bg-[#d3f5ce] flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="text-[#6d6e6b]" size={40} />
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold text-[#465362] mb-6 leading-tight">
+            <h1 className="text-4xl md:text-6xl font-bold text-[#6d6e6b] mb-6 leading-tight">
               Verified Communication
             </h1>
             <p className="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed">
@@ -41,10 +41,10 @@ export default function VerifiedCommunication() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card hover>
               <div className="p-6">
-                <div className="w-12 h-12 rounded-full bg-[#C2EABD] flex items-center justify-center mb-4">
-                  <MessageSquare className="text-[#465362]" size={24} />
+                <div className="w-12 h-12 rounded-full bg-[#d3f5ce] flex items-center justify-center mb-4">
+                  <MessageSquare className="text-[#6d6e6b]" size={24} />
                 </div>
-                <h3 className="text-xl font-semibold text-[#465362] mb-2">Secure Messaging</h3>
+                <h3 className="text-xl font-semibold text-[#6d6e6b] mb-2">Secure Messaging</h3>
                 <p className="text-gray-600">
                   End-to-end encrypted messaging system for safe customer communications and business inquiries.
                 </p>
@@ -53,10 +53,10 @@ export default function VerifiedCommunication() {
 
             <Card hover>
               <div className="p-6">
-                <div className="w-12 h-12 rounded-full bg-[#C2EABD] flex items-center justify-center mb-4">
-                  <Phone className="text-[#465362]" size={24} />
+                <div className="w-12 h-12 rounded-full bg-[#d3f5ce] flex items-center justify-center mb-4">
+                  <Phone className="text-[#6d6e6b]" size={24} />
                 </div>
-                <h3 className="text-xl font-semibold text-[#465362] mb-2">Verified Phone Numbers</h3>
+                <h3 className="text-xl font-semibold text-[#6d6e6b] mb-2">Verified Phone Numbers</h3>
                 <p className="text-gray-600">
                   All phone numbers are verified and authenticated, ensuring customers can reach legitimate businesses.
                 </p>
@@ -65,10 +65,10 @@ export default function VerifiedCommunication() {
 
             <Card hover>
               <div className="p-6">
-                <div className="w-12 h-12 rounded-full bg-[#C2EABD] flex items-center justify-center mb-4">
-                  <Mail className="text-[#465362]" size={24} />
+                <div className="w-12 h-12 rounded-full bg-[#d3f5ce] flex items-center justify-center mb-4">
+                  <Mail className="text-[#6d6e6b]" size={24} />
                 </div>
-                <h3 className="text-xl font-semibold text-[#465362] mb-2">Authenticated Email</h3>
+                <h3 className="text-xl font-semibold text-[#6d6e6b] mb-2">Authenticated Email</h3>
                 <p className="text-gray-600">
                   Verified email addresses with domain authentication to prevent phishing and spam communications.
                 </p>
@@ -77,10 +77,10 @@ export default function VerifiedCommunication() {
 
             <Card hover>
               <div className="p-6">
-                <div className="w-12 h-12 rounded-full bg-[#C2EABD] flex items-center justify-center mb-4">
-                  <Shield className="text-[#465362]" size={24} />
+                <div className="w-12 h-12 rounded-full bg-[#d3f5ce] flex items-center justify-center mb-4">
+                  <Shield className="text-[#6d6e6b]" size={24} />
                 </div>
-                <h3 className="text-xl font-semibold text-[#465362] mb-2">Traceable Interactions</h3>
+                <h3 className="text-xl font-semibold text-[#6d6e6b] mb-2">Traceable Interactions</h3>
                 <p className="text-gray-600">
                   Every communication is logged and traceable, providing accountability and dispute resolution support.
                 </p>
@@ -89,10 +89,10 @@ export default function VerifiedCommunication() {
 
             <Card hover>
               <div className="p-6">
-                <div className="w-12 h-12 rounded-full bg-[#C2EABD] flex items-center justify-center mb-4">
-                  <Clock className="text-[#465362]" size={24} />
+                <div className="w-12 h-12 rounded-full bg-[#d3f5ce] flex items-center justify-center mb-4">
+                  <Clock className="text-[#6d6e6b]" size={24} />
                 </div>
-                <h3 className="text-xl font-semibold text-[#465362] mb-2">Response Tracking</h3>
+                <h3 className="text-xl font-semibold text-[#6d6e6b] mb-2">Response Tracking</h3>
                 <p className="text-gray-600">
                   Monitor response times and customer satisfaction with comprehensive communication analytics.
                 </p>
@@ -101,10 +101,10 @@ export default function VerifiedCommunication() {
 
             <Card hover>
               <div className="p-6">
-                <div className="w-12 h-12 rounded-full bg-[#C2EABD] flex items-center justify-center mb-4">
-                  <CheckCircle className="text-[#465362]" size={24} />
+                <div className="w-12 h-12 rounded-full bg-[#d3f5ce] flex items-center justify-center mb-4">
+                  <CheckCircle className="text-[#6d6e6b]" size={24} />
                 </div>
-                <h3 className="text-xl font-semibold text-[#465362] mb-2">Professional Standards</h3>
+                <h3 className="text-xl font-semibold text-[#6d6e6b] mb-2">Professional Standards</h3>
                 <p className="text-gray-600">
                   Maintain professional communication standards with verified business credentials and contact information.
                 </p>
@@ -125,7 +125,7 @@ export default function VerifiedCommunication() {
               transition={{ duration: 0.6 }}
               className="text-center mb-12"
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-[#465362] mb-4">
+              <h2 className="text-3xl md:text-4xl font-bold text-[#6d6e6b] mb-4">
                 How Verified Communication Works
               </h2>
               <p className="text-lg text-gray-600">
@@ -135,24 +135,24 @@ export default function VerifiedCommunication() {
 
             <div className="grid md:grid-cols-3 gap-8">
               <div className="text-center">
-                <div className="w-16 h-16 rounded-full bg-[#C2EABD] flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl font-bold text-[#465362]">1</span>
+                <div className="w-16 h-16 rounded-full bg-[#d3f5ce] flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl font-bold text-[#6d6e6b]">1</span>
                 </div>
-                <h3 className="text-lg font-semibold text-[#465362] mb-2">Verification</h3>
+                <h3 className="text-lg font-semibold text-[#6d6e6b] mb-2">Verification</h3>
                 <p className="text-gray-600">Submit your business contact information for verification</p>
               </div>
               <div className="text-center">
-                <div className="w-16 h-16 rounded-full bg-[#C2EABD] flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl font-bold text-[#465362]">2</span>
+                <div className="w-16 h-16 rounded-full bg-[#d3f5ce] flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl font-bold text-[#6d6e6b]">2</span>
                 </div>
-                <h3 className="text-lg font-semibold text-[#465362] mb-2">Setup</h3>
+                <h3 className="text-lg font-semibold text-[#6d6e6b] mb-2">Setup</h3>
                 <p className="text-gray-600">Configure your verified communication channels</p>
               </div>
               <div className="text-center">
-                <div className="w-16 h-16 rounded-full bg-[#C2EABD] flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl font-bold text-[#465362]">3</span>
+                <div className="w-16 h-16 rounded-full bg-[#d3f5ce] flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl font-bold text-[#6d6e6b]">3</span>
                 </div>
-                <h3 className="text-lg font-semibold text-[#465362] mb-2">Connect</h3>
+                <h3 className="text-lg font-semibold text-[#6d6e6b] mb-2">Connect</h3>
                 <p className="text-gray-600">Start communicating with verified customers securely</p>
               </div>
             </div>
@@ -173,7 +173,7 @@ export default function VerifiedCommunication() {
               <Button 
                 variant="primary" 
                 size="lg" 
-                className="min-w-[260px] px-10 py-5 text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 rounded-xl bg-[#465362] hover:bg-[#3a4550] text-white"
+                className="min-w-[260px] px-10 py-5 text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 rounded-xl bg-[#6d6e6b] hover:bg-[#3a4550] text-white"
                 asChild
               >
                 <Link href="/verify" className="flex items-center justify-center gap-2">

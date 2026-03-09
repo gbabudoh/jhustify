@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import User from '@/lib/models/User';
+import prisma from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/utils/auth';
-import mongoose from 'mongoose';
 
 export async function GET(request: NextRequest) {
   try {
     const auth = await authenticateRequest(request);
-    if (!auth || auth.role !== 'ADMIN') {
+    if (!auth || (auth.role !== 'ADMIN' && auth.role !== 'SUPER_ADMIN')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    await connectDB();
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -19,34 +15,42 @@ export async function GET(request: NextRequest) {
     const role = searchParams.get('role');
     const search = searchParams.get('search');
 
-    const query: any = {};
+    const where: import('@prisma/client').Prisma.UserWhereInput = {};
     if (role) {
-      query.role = role;
+      const validRoles = ['BUSINESS_OWNER', 'CONSUMER', 'ADMIN', 'SUPER_ADMIN', 'TRUST_TEAM'] as const;
+      if (validRoles.includes(role as typeof validRoles[number])) {
+        where.role = role as import('@prisma/client').Role;
+      }
     }
     if (search) {
-      query.$or = [
-        { name: new RegExp(search, 'i') },
-        { email: new RegExp(search, 'i') },
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
       ];
     }
 
     const skip = (page - 1) * limit;
-    const users = await User.find(query)
-      .select('-password')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    const total = await User.countDocuments(query);
-
-    const usersWithId = users.map((user: any) => {
-      const { _id, ...rest } = user;
-      return { ...rest, id: _id?.toString() };
-    });
+    
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.user.count({ where }),
+    ]);
 
     return NextResponse.json({
-      users: usersWithId,
+      users,
       pagination: {
         page,
         limit,
@@ -54,10 +58,11 @@ export async function GET(request: NextRequest) {
         pages: Math.ceil(total / limit),
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Admin users fetch error:', error);
+    const message = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: message },
       { status: 500 }
     );
   }
@@ -66,34 +71,43 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const auth = await authenticateRequest(request);
-    if (!auth || auth.role !== 'ADMIN') {
+    if (!auth || (auth.role !== 'ADMIN' && auth.role !== 'SUPER_ADMIN')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
+    // Filter out restricted fields from updates to prevent accidental changes to unique or internal fields
+    const updatesObj = (await request.json()) as Record<string, unknown>;
+    const { userId } = updatesObj;
 
-    const body = await request.json();
-    const { userId, ...updates } = body;
-
-    if (!userId) {
+    if (!userId || typeof userId !== 'string') {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      updates,
-      { new: true, runValidators: true }
-    ).select('-password');
+    const safeUpdates = { ...updatesObj };
+    delete safeUpdates.id;
+    delete safeUpdates.email;
+    delete safeUpdates.userId;
+    delete safeUpdates.password;
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: safeUpdates as import('@prisma/client').Prisma.UserUpdateInput,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
 
     return NextResponse.json({ user, message: 'User updated successfully' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Admin user update error:', error);
+    const message = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: message },
       { status: 500 }
     );
   }
@@ -102,11 +116,9 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const auth = await authenticateRequest(request);
-    if (!auth || auth.role !== 'ADMIN') {
+    if (!auth || (auth.role !== 'ADMIN' && auth.role !== 'SUPER_ADMIN')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    await connectDB();
 
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
@@ -120,18 +132,68 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 });
     }
 
-    const user = await User.findByIdAndDelete(userId);
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    await prisma.user.delete({
+      where: { id: userId },
+    });
 
     return NextResponse.json({ message: 'User deleted successfully' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Admin user delete error:', error);
+    const message = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: message },
       { status: 500 }
     );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const auth = await authenticateRequest(request);
+    if (!auth || auth.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Forbidden - Super Admin access required' }, { status: 403 });
+    }
+
+    const { email, password, name, role } = await request.json();
+
+    if (!email || !password || !name || !role) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    const validAdminRoles = ['ADMIN', 'TRUST_TEAM'];
+    if (!validAdminRoles.includes(role)) {
+      return NextResponse.json({ error: 'Invalid role for admin creation' }, { status: 400 });
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() }
+    });
+
+    if (existingUser) {
+      return NextResponse.json({ error: 'User already exists' }, { status: 400 });
+    }
+
+    const bcrypt = await import('bcryptjs');
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const user = await prisma.user.create({
+      data: {
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        name,
+        role: role as import('@prisma/client').Role,
+      },
+      select: {
+        id: true, email: true, name: true, role: true, createdAt: true
+      }
+    });
+
+    return NextResponse.json({ user, message: 'Admin user created successfully' }, { status: 201 });
+  } catch (error: unknown) {
+    console.error('Admin user creation error:', error);
+    const message = error instanceof Error ? error.message : 'Internal server error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

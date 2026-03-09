@@ -4,7 +4,9 @@ export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const isAdminRoute = endpoint.startsWith('/admin') || endpoint.startsWith('/api/admin');
+  const tokenKey = isAdminRoute ? 'admin-token' : 'token';
+  const token = typeof window !== 'undefined' ? localStorage.getItem(tokenKey) : null;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',

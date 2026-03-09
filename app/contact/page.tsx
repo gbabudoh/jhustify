@@ -12,7 +12,7 @@ export default function ContactPage() {
       <Header />
       
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-[#C2EABD] to-[#D9F8D4] py-16">
+      <section className="bg-gradient-to-br from-[#d3f5ce] to-[#D9F8D4] py-16">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
             <motion.div
@@ -20,7 +20,7 @@ export default function ContactPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <h1 className="text-4xl md:text-5xl font-bold text-[#465362] mb-4">
+              <h1 className="text-4xl md:text-5xl font-bold text-[#6d6e6b] mb-4">
                 Contact Us
               </h1>
               <p className="text-xl text-gray-700 leading-relaxed">
@@ -37,7 +37,7 @@ export default function ContactPage() {
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Contact Form */}
             <Card>
-              <h2 className="text-2xl font-bold text-[#465362] mb-6">Send us a Message</h2>
+              <h2 className="text-2xl font-bold text-[#6d6e6b] mb-6">Send us a Message</h2>
               <form className="space-y-6">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -47,7 +47,7 @@ export default function ContactPage() {
                     type="text"
                     id="name"
                     name="name"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C2EABD] focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d3f5ce] focus:border-transparent outline-none transition-all"
                     placeholder="Enter your full name"
                   />
                 </div>
@@ -60,7 +60,7 @@ export default function ContactPage() {
                     type="email"
                     id="email"
                     name="email"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C2EABD] focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d3f5ce] focus:border-transparent outline-none transition-all"
                     placeholder="Enter your email address"
                   />
                 </div>
@@ -73,7 +73,7 @@ export default function ContactPage() {
                     type="text"
                     id="subject"
                     name="subject"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C2EABD] focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d3f5ce] focus:border-transparent outline-none transition-all"
                     placeholder="What's this about?"
                   />
                 </div>
@@ -86,14 +86,14 @@ export default function ContactPage() {
                     id="message"
                     name="message"
                     rows={5}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C2EABD] focus:border-transparent outline-none transition-all resize-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d3f5ce] focus:border-transparent outline-none transition-all resize-none"
                     placeholder="Tell us more about your inquiry..."
                   />
                 </div>
                 
                 <button
                   type="submit"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#465362] text-white font-semibold rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#6d6e6b] text-white font-semibold rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
                 >
                   <Send size={18} />
                   Send Message
@@ -104,36 +104,36 @@ export default function ContactPage() {
             {/* Contact Information */}
             <div className="space-y-6">
               <Card>
-                <h2 className="text-2xl font-bold text-[#465362] mb-6">Get in Touch</h2>
+                <h2 className="text-2xl font-bold text-[#6d6e6b] mb-6">Get in Touch</h2>
                 <div className="space-y-4">
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-full bg-[#C2EABD] flex items-center justify-center flex-shrink-0">
-                      <Mail className="text-[#465362]" size={20} />
+                    <div className="w-12 h-12 rounded-full bg-[#d3f5ce] flex items-center justify-center flex-shrink-0">
+                      <Mail className="text-[#6d6e6b]" size={20} />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-[#465362] mb-1">Email</h3>
+                      <h3 className="font-semibold text-[#6d6e6b] mb-1">Email</h3>
                       <p className="text-gray-600">support@jhustify.com</p>
                       <p className="text-gray-600">business@jhustify.com</p>
                     </div>
                   </div>
                   
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-full bg-[#C2EABD] flex items-center justify-center flex-shrink-0">
-                      <Phone className="text-[#465362]" size={20} />
+                    <div className="w-12 h-12 rounded-full bg-[#d3f5ce] flex items-center justify-center flex-shrink-0">
+                      <Phone className="text-[#6d6e6b]" size={20} />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-[#465362] mb-1">Phone</h3>
+                      <h3 className="font-semibold text-[#6d6e6b] mb-1">Phone</h3>
                       <p className="text-gray-600">+234 123 456 7890</p>
                       <p className="text-gray-600">Mon-Fri: 9AM-6PM WAT</p>
                     </div>
                   </div>
                   
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-full bg-[#C2EABD] flex items-center justify-center flex-shrink-0">
-                      <MapPin className="text-[#465362]" size={20} />
+                    <div className="w-12 h-12 rounded-full bg-[#d3f5ce] flex items-center justify-center flex-shrink-0">
+                      <MapPin className="text-[#6d6e6b]" size={20} />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-[#465362] mb-1">Office</h3>
+                      <h3 className="font-semibold text-[#6d6e6b] mb-1">Office</h3>
                       <p className="text-gray-600">
                         123 Business Avenue<br />
                         Victoria Island, Lagos<br />
@@ -145,7 +145,7 @@ export default function ContactPage() {
               </Card>
 
               <Card>
-                <h2 className="text-2xl font-bold text-[#465362] mb-4">Business Hours</h2>
+                <h2 className="text-2xl font-bold text-[#6d6e6b] mb-4">Business Hours</h2>
                 <div className="space-y-2 text-gray-600">
                   <div className="flex justify-between">
                     <span>Monday - Friday</span>

@@ -16,8 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const fileType = formData.get('fileType') as string || 'general';
+    const file = formData.get('file') as File | null;
 
     if (!file) {
       return NextResponse.json(
@@ -58,40 +57,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For development: Convert to base64 data URL
-    // For production: Upload to S3/GCS/Cloudinary and return URL
-    if (process.env.NODE_ENV === 'development' || !process.env.S3_BUCKET_NAME) {
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      const base64 = buffer.toString('base64');
-      const dataUrl = `data:${file.type};base64,${base64}`;
+    // Import MinIO upload utility
+    const { uploadFileToMinio } = await import('@/lib/storage/minio');
+
+    try {
+      const fileUrl = await uploadFileToMinio(file, file.name, file.type);
 
       return NextResponse.json(
         {
-          url: dataUrl,
+          url: fileUrl,
           filename: file.name,
           size: file.size,
           type: file.type,
-          message: 'File uploaded (base64 - development mode)',
+          message: 'File uploaded successfully to storage',
         },
         { status: 200 }
       );
+    } catch (uploadError: unknown) {
+      console.error('MinIO storage error:', uploadError);
+      return NextResponse.json(
+        { error: 'Failed to upload to permanent storage' },
+        { status: 500 }
+      );
     }
-
-    // Production: Upload to S3/GCS/Cloudinary
-    // TODO: Implement S3/GCS upload here
-    // Example:
-    // const uploadResult = await uploadToS3(file, fileType);
-    // return NextResponse.json({ url: uploadResult.url, ... });
 
     return NextResponse.json(
       { error: 'File upload not configured for production' },
       { status: 500 }
     );
-  } catch (error: any) {
-    console.error('File upload error:', error);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error('Unknown error');
+    console.error('File upload error:', err);
     return NextResponse.json(
-      { error: error.message || 'Failed to upload file' },
+      { error: err.message || 'Failed to upload file' },
       { status: 500 }
     );
   }

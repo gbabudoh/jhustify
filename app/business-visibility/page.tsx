@@ -22,10 +22,10 @@ export default function BusinessVisibility() {
             transition={{ duration: 0.6 }}
             className="text-center"
           >
-            <div className="w-20 h-20 rounded-full bg-[#C2EABD] flex items-center justify-center mx-auto mb-6">
-              <TrendingUp className="text-[#465362]" size={40} />
+            <div className="w-20 h-20 rounded-full bg-[#d3f5ce] flex items-center justify-center mx-auto mb-6">
+              <TrendingUp className="text-[#6d6e6b]" size={40} />
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold text-[#465362] mb-6 leading-tight">
+            <h1 className="text-4xl md:text-6xl font-bold text-[#6d6e6b] mb-6 leading-tight">
               Business Visibility
             </h1>
             <p className="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed">
@@ -41,10 +41,10 @@ export default function BusinessVisibility() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card hover>
               <div className="p-6">
-                <div className="w-12 h-12 rounded-full bg-[#C2EABD] flex items-center justify-center mb-4">
-                  <Globe className="text-[#465362]" size={24} />
+                <div className="w-12 h-12 rounded-full bg-[#d3f5ce] flex items-center justify-center mb-4">
+                  <Globe className="text-[#6d6e6b]" size={24} />
                 </div>
-                <h3 className="text-xl font-semibold text-[#465362] mb-2">Africa-Wide Reach</h3>
+                <h3 className="text-xl font-semibold text-[#6d6e6b] mb-2">Africa-Wide Reach</h3>
                 <p className="text-gray-600">
                   Connect with customers across the entire African continent through our centralized directory platform.
                 </p>
@@ -53,10 +53,10 @@ export default function BusinessVisibility() {
 
             <Card hover>
               <div className="p-6">
-                <div className="w-12 h-12 rounded-full bg-[#C2EABD] flex items-center justify-center mb-4">
-                  <Search className="text-[#465362]" size={24} />
+                <div className="w-12 h-12 rounded-full bg-[#d3f5ce] flex items-center justify-center mb-4">
+                  <Search className="text-[#6d6e6b]" size={24} />
                 </div>
-                <h3 className="text-xl font-semibold text-[#465362] mb-2">Enhanced Discoverability</h3>
+                <h3 className="text-xl font-semibold text-[#6d6e6b] mb-2">Enhanced Discoverability</h3>
                 <p className="text-gray-600">
                   Get found easily by customers searching for verified businesses in your industry and location.
                 </p>
@@ -65,10 +65,10 @@ export default function BusinessVisibility() {
 
             <Card hover>
               <div className="p-6">
-                <div className="w-12 h-12 rounded-full bg-[#C2EABD] flex items-center justify-center mb-4">
-                  <Users className="text-[#465362]" size={24} />
+                <div className="w-12 h-12 rounded-full bg-[#d3f5ce] flex items-center justify-center mb-4">
+                  <Users className="text-[#6d6e6b]" size={24} />
                 </div>
-                <h3 className="text-xl font-semibold text-[#465362] mb-2">SME Focus</h3>
+                <h3 className="text-xl font-semibold text-[#6d6e6b] mb-2">SME Focus</h3>
                 <p className="text-gray-600">
                   Specifically designed to help small and medium enterprises compete in the digital marketplace.
                 </p>
@@ -77,10 +77,10 @@ export default function BusinessVisibility() {
 
             <Card hover>
               <div className="p-6">
-                <div className="w-12 h-12 rounded-full bg-[#C2EABD] flex items-center justify-center mb-4">
-                  <BarChart className="text-[#465362]" size={24} />
+                <div className="w-12 h-12 rounded-full bg-[#d3f5ce] flex items-center justify-center mb-4">
+                  <BarChart className="text-[#6d6e6b]" size={24} />
                 </div>
-                <h3 className="text-xl font-semibold text-[#465362] mb-2">Growth Analytics</h3>
+                <h3 className="text-xl font-semibold text-[#6d6e6b] mb-2">Growth Analytics</h3>
                 <p className="text-gray-600">
                   Track your business visibility and customer engagement with comprehensive analytics tools.
                 </p>
@@ -89,10 +89,10 @@ export default function BusinessVisibility() {
 
             <Card hover>
               <div className="p-6">
-                <div className="w-12 h-12 rounded-full bg-[#C2EABD] flex items-center justify-center mb-4">
-                  <Target className="text-[#465362]" size={24} />
+                <div className="w-12 h-12 rounded-full bg-[#d3f5ce] flex items-center justify-center mb-4">
+                  <Target className="text-[#6d6e6b]" size={24} />
                 </div>
-                <h3 className="text-xl font-semibold text-[#465362] mb-2">Targeted Exposure</h3>
+                <h3 className="text-xl font-semibold text-[#6d6e6b] mb-2">Targeted Exposure</h3>
                 <p className="text-gray-600">
                   Reach the right customers with our intelligent matching and recommendation system.
                 </p>
@@ -101,10 +101,10 @@ export default function BusinessVisibility() {
 
             <Card hover>
               <div className="p-6">
-                <div className="w-12 h-12 rounded-full bg-[#C2EABD] flex items-center justify-center mb-4">
-                  <TrendingUp className="text-[#465362]" size={24} />
+                <div className="w-12 h-12 rounded-full bg-[#d3f5ce] flex items-center justify-center mb-4">
+                  <TrendingUp className="text-[#6d6e6b]" size={24} />
                 </div>
-                <h3 className="text-xl font-semibold text-[#465362] mb-2">Digital Presence</h3>
+                <h3 className="text-xl font-semibold text-[#6d6e6b] mb-2">Digital Presence</h3>
                 <p className="text-gray-600">
                   Establish a strong online presence even without technical expertise or large marketing budgets.
                 </p>
@@ -125,7 +125,7 @@ export default function BusinessVisibility() {
               transition={{ duration: 0.6 }}
               className="text-center mb-12"
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-[#465362] mb-4">
+              <h2 className="text-3xl md:text-4xl font-bold text-[#6d6e6b] mb-4">
                 Why Business Visibility Matters
               </h2>
               <p className="text-lg text-gray-600">
@@ -135,11 +135,11 @@ export default function BusinessVisibility() {
 
             <div className="grid md:grid-cols-2 gap-8">
               <div className="text-center">
-                <div className="text-4xl font-bold text-[#465362] mb-2">80%</div>
+                <div className="text-4xl font-bold text-[#6d6e6b] mb-2">80%</div>
                 <p className="text-gray-600">of customers research businesses online before making decisions</p>
               </div>
               <div className="text-center">
-                <div className="text-4xl font-bold text-[#465362] mb-2">3x</div>
+                <div className="text-4xl font-bold text-[#6d6e6b] mb-2">3x</div>
                 <p className="text-gray-600">increase in customer inquiries for businesses with strong online presence</p>
               </div>
             </div>
@@ -160,7 +160,7 @@ export default function BusinessVisibility() {
               <Button 
                 variant="primary" 
                 size="lg" 
-                className="min-w-[260px] px-10 py-5 text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 rounded-xl bg-[#465362] hover:bg-[#3a4550] text-white"
+                className="min-w-[260px] px-10 py-5 text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 rounded-xl bg-[#6d6e6b] hover:bg-[#3a4550] text-white"
                 asChild
               >
                 <Link href="/verify" className="flex items-center justify-center gap-2">

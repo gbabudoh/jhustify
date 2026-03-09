@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { LogIn, Shield, ArrowLeft } from 'lucide-react';
-import Header from '@/components/Header';
+import { LogIn, ArrowLeft } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import Image from 'next/image';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -22,16 +22,16 @@ export default function AdminLoginPage() {
   useEffect(() => {
     // Check if already logged in as admin
     if (typeof window !== 'undefined') {
-      const userStr = localStorage.getItem('user');
-      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('admin-user');
+      const token = localStorage.getItem('admin-token');
       
       if (userStr && token) {
         try {
           const user = JSON.parse(userStr);
-          if (user.role === 'ADMIN') {
-            router.push('/admin');
+          if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
+            router.push('/admin/dashboard');
           }
-        } catch (e) {
+        } catch {
           // Invalid user data, continue with login
         }
       }
@@ -58,27 +58,28 @@ export default function AdminLoginPage() {
         throw new Error(data.error || 'Login failed');
       }
 
-      // Check if user is admin
-      if (data.user?.role !== 'ADMIN') {
+      // Check if user is admin or super admin
+      if (data.user?.role !== 'ADMIN' && data.user?.role !== 'SUPER_ADMIN') {
         setError('Access denied. Admin privileges required.');
-        // Clear any stored data
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        // Clear admin keys
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
         return;
       }
 
-      // Store auth data
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      // Store admin specifically
+      localStorage.setItem('admin-token', data.token);
+      localStorage.setItem('admin-user', JSON.stringify(data.user));
       
       // Dispatch auth change event
       window.dispatchEvent(new Event('auth-change'));
 
       // Redirect to admin dashboard
-      const redirect = searchParams.get('redirect') || '/admin';
+      const redirect = searchParams.get('redirect') || '/admin/dashboard';
       router.push(redirect);
-    } catch (err: any) {
-      setError(err.message || 'Login failed. Please try again.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -86,13 +87,12 @@ export default function AdminLoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F8FAFC] via-[#F1F5F9] to-[#E2E8F0]">
-      <Header />
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-md mx-auto">
           <div className="mb-6 text-center">
             <Link
               href="/admin"
-              className="inline-flex items-center text-sm text-gray-600 hover:text-[#465362] mb-4 transition-colors"
+              className="inline-flex items-center text-sm text-gray-600 hover:text-[#6d6e6b] mb-4 transition-colors"
             >
               <ArrowLeft size={16} className="mr-2" />
               Back to Admin
@@ -101,10 +101,15 @@ export default function AdminLoginPage() {
 
           <Card className="p-8">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-[#465362] to-[#6B7280] rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Shield className="text-white" size={32} />
-              </div>
-              <h1 className="text-3xl font-bold text-[#465362] mb-2">Admin Login</h1>
+              <Image 
+                src="/logo.png" 
+                alt="Jhustify Logo" 
+                width={160} 
+                height={60} 
+                className="mx-auto mb-6 object-contain"
+                priority
+              />
+              <h1 className="text-3xl font-bold text-[#6d6e6b] mb-2">Admin Login</h1>
               <p className="text-gray-600">Sign in to access the admin panel</p>
             </div>
 
@@ -141,7 +146,7 @@ export default function AdminLoginPage() {
               <Button
                 type="submit"
                 variant="primary"
-                className="w-full bg-gradient-to-r from-[#465362] to-[#6B7280] hover:from-[#5A6774] hover:to-[#7A8289]"
+                className="w-full bg-gradient-to-r from-[#6d6e6b] to-[#6B7280] hover:from-[#5A6774] hover:to-[#7A8289]"
                 isLoading={loading}
                 disabled={loading}
               >
@@ -153,7 +158,7 @@ export default function AdminLoginPage() {
             <div className="mt-6 pt-6 border-t border-[#D6D9DD]">
               <p className="text-sm text-center text-gray-600">
                 Not an admin?{' '}
-                <Link href="/login" className="text-[#465362] hover:underline font-medium">
+                <Link href="/login" className="text-[#6d6e6b] hover:underline font-medium">
                   Regular Login
                 </Link>
               </p>

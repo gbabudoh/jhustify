@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Banner from '@/lib/models/Banner';
+import prisma from '@/lib/prisma';
 
 // POST - Track banner click or impression
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await dbConnect();
-
     const body = await req.json();
     const { type } = body; // 'click' or 'impression'
 
@@ -14,27 +11,34 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ error: 'Invalid analytics type. Must be "click" or "impression"' }, { status: 400 });
     }
 
-    const banner = await Banner.findById(params.id);
+    const banner = await prisma.banner.findUnique({
+      where: { id: params.id }
+    });
 
     if (!banner) {
       return NextResponse.json({ error: 'Banner not found' }, { status: 404 });
     }
 
     // Increment the appropriate counter
+    const updateData: { clickCount?: { increment: number }; impressionCount?: { increment: number } } = {};
     if (type === 'click') {
-      banner.clickCount += 1;
+      updateData.clickCount = { increment: 1 };
     } else if (type === 'impression') {
-      banner.impressionCount += 1;
+      updateData.impressionCount = { increment: 1 };
     }
 
-    await banner.save();
+    const updatedBanner = await prisma.banner.update({
+      where: { id: params.id },
+      data: updateData
+    });
 
     return NextResponse.json({
       message: `${type} tracked successfully`,
-      [type === 'click' ? 'clickCount' : 'impressionCount']: type === 'click' ? banner.clickCount : banner.impressionCount
+      [type === 'click' ? 'clickCount' : 'impressionCount']: type === 'click' ? updatedBanner.clickCount : updatedBanner.impressionCount
     }, { status: 200 });
-  } catch (error: any) {
-    console.error('Error tracking banner analytics:', error);
-    return NextResponse.json({ error: error.message || 'Failed to track analytics' }, { status: 500 });
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error('Unknown error');
+    console.error('Error tracking banner analytics:', err.message);
+    return NextResponse.json({ error: err.message || 'Failed to track analytics' }, { status: 500 });
   }
 }

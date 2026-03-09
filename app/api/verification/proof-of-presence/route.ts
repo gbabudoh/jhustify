@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import Business from '@/lib/models/Business';
-import Verification from '@/lib/models/Verification';
+import prisma from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/utils/auth';
 
 export async function POST(request: NextRequest) {
@@ -11,10 +9,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-
     const body = await request.json();
-    const { verificationId, videoSecureLink, geoTagData, notes } = body;
+    const { verificationId, videoSecureLink, geoTagData } = body;
 
     if (!verificationId || !videoSecureLink) {
       return NextResponse.json(
@@ -23,7 +19,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const verification = await Verification.findOne({ verificationId });
+    const verification = await prisma.verification.findUnique({
+      where: { verificationId }
+    });
+
     if (!verification) {
       return NextResponse.json(
         { error: 'Verification not found' },
@@ -31,14 +30,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (verification.classification !== 'UNREGISTERED') {
+    // Ensure classification is treated as the correct enum type
+    const classification: import('@prisma/client').Classification = verification.classification as import('@prisma/client').Classification;
+
+    if (classification !== 'UNREGISTERED') {
       return NextResponse.json(
         { error: 'Proof of presence is only required for unregistered businesses' },
         { status: 400 }
       );
     }
 
-    const business = await Business.findById(verification.businessId);
+    const business = await prisma.business.findUnique({
+      where: { id: verification.businessId }
+    });
+
     if (!business) {
       return NextResponse.json(
         { error: 'Business not found' },
@@ -47,27 +52,34 @@ export async function POST(request: NextRequest) {
     }
 
     // Check ownership
-    if (business.ownerId.toString() !== auth.userId) {
+    if (business.ownerId !== auth.userId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Update verification with proof of presence
-    verification.proofOfPresenceVideoLink = videoSecureLink;
+    const updateData: import('@prisma/client').Prisma.VerificationUpdateInput = {
+      proofOfPresenceVideoLink: videoSecureLink,
+      status: 'IN_REVIEW',
+      progressPercent: 60,
+      nextStep: 'Awaiting Informal Vetting Auditor review (IVA)'
+    };
+
     if (geoTagData) {
-      verification.geoTagData = {
-        lat: geoTagData.lat,
-        lng: geoTagData.lng,
-        timestamp: new Date(),
-      };
+      updateData.lat = geoTagData.lat;
+      updateData.lng = geoTagData.lng;
+      updateData.geoTimestamp = new Date();
     }
-    verification.status = 'IN_REVIEW';
-    verification.progressPercent = 60;
-    verification.nextStep = 'Awaiting Informal Vetting Auditor review (IVA)';
-    await verification.save();
+
+    await prisma.verification.update({
+      where: { id: verification.id },
+      data: updateData
+    });
 
     // Update business status
-    business.verificationStatus = 'IN_REVIEW';
-    await business.save();
+    await prisma.business.update({
+      where: { id: business.id },
+      data: { verificationStatus: 'IN_REVIEW' }
+    });
 
     return NextResponse.json(
       {
@@ -77,10 +89,11 @@ export async function POST(request: NextRequest) {
       },
       { status: 202 }
     );
-  } catch (error: any) {
-    console.error('Proof of presence submission error:', error);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error('Unknown error');
+    console.error('Proof of presence submission error:', err.message);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: err.message || 'Internal server error' },
       { status: 500 }
     );
   }

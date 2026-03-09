@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import Business from '@/lib/models/Business';
-import Verification from '@/lib/models/Verification';
+import prisma from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/utils/auth';
 import { randomBytes } from 'crypto';
 
@@ -16,23 +14,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-
     const body = await request.json();
     const {
       businessId,
-      businessName,
       classification,
-      contactPersonName,
       nationalIdSecureLink,
       identityDocumentType,
       registrationDocSecureLink,
       businessBankName,
-      geoAddress,
       geoCoordinates,
     } = body;
 
-    if (!businessId || !businessName || !classification || !contactPersonName || !nationalIdSecureLink || !geoAddress) {
+    if (!businessId || !classification || !nationalIdSecureLink) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -46,7 +39,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const business = await Business.findById(businessId);
+    const business = await prisma.business.findUnique({
+      where: { id: businessId }
+    });
+
     if (!business) {
       return NextResponse.json(
         { error: 'Business not found' },
@@ -55,55 +51,70 @@ export async function POST(request: NextRequest) {
     }
 
     // Check ownership
-    if (business.ownerId.toString() !== auth.userId) {
+    if (business.ownerId !== auth.userId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Generate verification ID
-    let verificationId = generateVerificationId();
-    while (await Verification.findOne({ verificationId })) {
-      verificationId = generateVerificationId();
+    // Unique verification ID generation logic
+    const existing = await prisma.verification.findFirst({
+      where: { businessId }
+    });
+
+    let verificationId = existing?.verificationId;
+    
+    if (!verificationId) {
+      let isUnique = false;
+      while (!isUnique) {
+        verificationId = generateVerificationId();
+        const check = await prisma.verification.findUnique({
+          where: { verificationId }
+        });
+        if (!check) isUnique = true;
+      }
     }
 
-    // Create or update verification
-    const updateData: any = {
-      verificationId,
+    // Explicitly define update/create data using Unchecked types to allow direct ID assignments
+    const verificationData: import('@prisma/client').Prisma.VerificationUncheckedUpdateInput = {
+      verificationId: verificationId as string,
       businessId,
       status: 'SUBMITTED',
-      classification,
+      classification: classification as import('@prisma/client').Classification,
       nationalIdSecureLink,
-      identityDocumentType: identityDocumentType || undefined,
-      businessBankName: businessBankName || undefined,
-      registrationDocSecureLink: classification === 'REGISTERED' ? registrationDocSecureLink : undefined,
-      geoTagData: geoCoordinates
-        ? {
-            lat: geoCoordinates.lat,
-            lng: geoCoordinates.lng,
-            timestamp: new Date(),
-          }
-        : undefined,
+      identityDocumentType: identityDocumentType || null,
+      businessBankName: businessBankName || null,
+      registrationDocSecureLink: classification === 'REGISTERED' ? registrationDocSecureLink : null,
       progressPercent: 20,
       nextStep: classification === 'REGISTERED' 
         ? 'Awaiting Formal Vetting Specialist review (FVS)'
         : 'Submit proof of presence (video/photos)',
     };
 
-    // If verification already exists, preserve existing ID
-    const existingVerification = await Verification.findOne({ businessId });
-    if (existingVerification) {
-      updateData.verificationId = existingVerification.verificationId;
+    if (geoCoordinates) {
+      verificationData.lat = geoCoordinates.lat;
+      verificationData.lng = geoCoordinates.lng;
+      verificationData.geoTimestamp = new Date();
     }
 
-    const verification = await Verification.findOneAndUpdate(
-      { businessId },
-      updateData,
-      { upsert: true, new: true }
-    );
+    let verification;
+    if (existing) {
+      verification = await prisma.verification.update({
+        where: { id: existing.id },
+        data: verificationData
+      });
+    } else {
+      verification = await prisma.verification.create({
+        data: verificationData as import('@prisma/client').Prisma.VerificationUncheckedCreateInput
+      });
+    }
 
     // Update business status
-    business.verificationStatus = 'SUBMITTED';
-    business.verificationId = verificationId;
-    await business.save();
+    await prisma.business.update({
+      where: { id: businessId },
+      data: {
+        verificationStatus: 'SUBMITTED',
+        verificationId: verificationId
+      }
+    });
 
     return NextResponse.json(
       {
@@ -113,10 +124,11 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error: any) {
-    console.error('Verification submission error:', error);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error('Unknown error');
+    console.error('Verification submission error:', err.message);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: err.message || 'Internal server error' },
       { status: 500 }
     );
   }

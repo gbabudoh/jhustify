@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import Rating from '@/lib/models/Rating';
-import Business from '@/lib/models/Business';
-import Message from '@/lib/models/Message';
+import prisma from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/utils/auth';
 import { analyzeSentiment } from '@/lib/utils/ai';
 
@@ -25,8 +22,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await connectDB();
-
     const body = await request.json();
     const { businessId, rating, comment } = body;
 
@@ -45,7 +40,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify business exists
-    const business = await Business.findById(businessId);
+    const business = await prisma.business.findUnique({
+      where: { id: businessId }
+    });
+
     if (!business) {
       return NextResponse.json(
         { error: 'Business not found' },
@@ -54,30 +52,41 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has interacted with business (sent a message)
-    const hasInteracted = await Message.exists({
-      businessId,
-      userId: auth.userId,
+    const interaction = await prisma.message.findFirst({
+      where: {
+        businessId,
+        userId: auth.userId,
+      }
     });
 
-    // Create or update rating
-    const ratingData: any = {
-      businessId,
-      userId: auth.userId,
-      rating,
-      verified: !!hasInteracted,
-    };
-
+    let sentimentSummary = null;
     if (comment && comment.trim()) {
-      ratingData.comment = comment.trim();
       // Analyze sentiment using AI
-      ratingData.sentimentSummary = await analyzeSentiment(ratingData.comment);
+      sentimentSummary = await analyzeSentiment(comment.trim());
     }
 
-    const existingRating = await Rating.findOneAndUpdate(
-      { businessId, userId: auth.userId },
-      ratingData,
-      { upsert: true, new: true }
-    );
+    const upsertRating = await prisma.rating.upsert({
+      where: {
+        businessId_userId: {
+          businessId,
+          userId: auth.userId
+        }
+      },
+      update: {
+        rating,
+        comment: comment?.trim() || null,
+        sentimentSummary,
+        verified: !!interaction,
+      },
+      create: {
+        businessId,
+        userId: auth.userId,
+        rating,
+        comment: comment?.trim() || null,
+        sentimentSummary,
+        verified: !!interaction,
+      }
+    });
 
     // Update business average rating
     await updateBusinessRating(businessId);
@@ -86,19 +95,20 @@ export async function POST(request: NextRequest) {
       {
         message: 'Rating submitted successfully',
         rating: {
-          id: existingRating._id,
-          rating: existingRating.rating,
-          comment: existingRating.comment,
-          sentimentSummary: existingRating.sentimentSummary,
-          verified: existingRating.verified,
+          id: upsertRating.id,
+          rating: upsertRating.rating,
+          comment: upsertRating.comment,
+          sentimentSummary: upsertRating.sentimentSummary,
+          verified: upsertRating.verified,
         },
       },
       { status: 201 }
     );
-  } catch (error: any) {
-    console.error('Rating creation error:', error);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error('Unknown error');
+    console.error('Rating creation error:', err.message);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: err.message || 'Internal server error' },
       { status: 500 }
     );
   }
@@ -110,8 +120,6 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
-
     const { searchParams } = new URL(request.url);
     const businessId = searchParams.get('businessId');
     const page = parseInt(searchParams.get('page') || '1');
@@ -126,57 +134,48 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    const ratings = await Rating.find({ businessId })
-      .populate('userId', 'name email')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    const total = await Rating.countDocuments({ businessId });
-
-    // Calculate average rating
-    const ratingStats = await Rating.aggregate([
-      { $match: { businessId: businessId } },
-      {
-        $group: {
-          _id: null,
-          average: { $avg: '$rating' },
-          count: { $sum: 1 },
-          distribution: {
-            $push: '$rating',
-          },
+    const [ratings, total, aggregates, distributionData] = await Promise.all([
+      prisma.rating.findMany({
+        where: { businessId },
+        include: {
+          user: {
+            select: { name: true, email: true }
+          }
         },
-      },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit
+      }),
+      prisma.rating.count({ where: { businessId } }),
+      prisma.rating.aggregate({
+        where: { businessId },
+        _avg: { rating: true },
+        _count: { _all: true }
+      }),
+      prisma.rating.groupBy({
+        by: ['rating'],
+        where: { businessId },
+        _count: { _all: true }
+      })
     ]);
 
-    const stats = ratingStats[0] || { average: 0, count: 0, distribution: [] };
-    
     // Calculate rating distribution
-    const distribution = {
-      5: stats.distribution.filter((r: number) => r === 5).length,
-      4: stats.distribution.filter((r: number) => r === 4).length,
-      3: stats.distribution.filter((r: number) => r === 3).length,
-      2: stats.distribution.filter((r: number) => r === 2).length,
-      1: stats.distribution.filter((r: number) => r === 1).length,
-    };
-
-    const ratingsWithId = ratings.map((rating: any) => {
-      const { _id, userId, ...rest } = rating;
-      return {
-        ...rest,
-        id: _id?.toString(),
-        userId: userId?._id?.toString(),
-        userName: userId?.name || 'Anonymous',
-        userEmail: userId?.email || '',
-      };
+    const distribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    distributionData.forEach(item => {
+      distribution[item.rating] = item._count._all;
     });
 
+    const ratingsResponse = ratings.map(rating => ({
+      ...rating,
+      userName: rating.user?.name || 'Anonymous',
+      userEmail: rating.user?.email || '',
+    }));
+
     return NextResponse.json({
-      ratings: ratingsWithId,
+      ratings: ratingsResponse,
       stats: {
-        average: Math.round(stats.average * 10) / 10,
-        count: stats.count,
+        average: aggregates._avg.rating ? Math.round(aggregates._avg.rating * 10) / 10 : 0,
+        count: aggregates._count._all,
         distribution,
       },
       pagination: {
@@ -186,10 +185,11 @@ export async function GET(request: NextRequest) {
         pages: Math.ceil(total / limit),
       },
     });
-  } catch (error: any) {
-    console.error('Rating fetch error:', error);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error('Unknown error');
+    console.error('Rating fetch error:', err.message);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: err.message || 'Internal server error' },
       { status: 500 }
     );
   }
@@ -200,25 +200,22 @@ export async function GET(request: NextRequest) {
  */
 async function updateBusinessRating(businessId: string) {
   try {
-    const stats = await Rating.aggregate([
-      { $match: { businessId: businessId } },
-      {
-        $group: {
-          _id: null,
-          average: { $avg: '$rating' },
-          count: { $sum: 1 },
-        },
-      },
-    ]);
+    const stats = await prisma.rating.aggregate({
+      where: { businessId },
+      _avg: { rating: true },
+      _count: { _all: true }
+    });
 
-    if (stats.length > 0) {
-      await Business.findByIdAndUpdate(businessId, {
-        averageRating: Math.round(stats[0].average * 10) / 10,
-        ratingCount: stats[0].count,
+    if (stats._count._all > 0) {
+      await prisma.business.update({
+        where: { id: businessId },
+        data: {
+          averageRating: stats._avg.rating ? Math.round(stats._avg.rating * 10) / 10 : 0,
+          ratingCount: stats._count._all,
+        }
       });
     }
   } catch (error) {
     console.error('Error updating business rating:', error);
   }
 }
-

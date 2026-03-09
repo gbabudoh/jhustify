@@ -23,12 +23,11 @@ interface BusinessCardProps {
 }
 
 export default function BusinessCard({ business }: BusinessCardProps) {
-  const isFormal = business.classification === 'REGISTERED';
-  const hasHighRating = (business.averageRating || 0) >= 4.5;
   const businessId = business._id || business.id;
   
-  const showBlueBadge = isFormal || business.trustBadgeType === 'FORMAL' || business.trustBadgeType === 'VERIFIED';
-  const showGreenBadge = !isFormal && (hasHighRating || business.trustBadgeType === 'COMMUNITY_TRUSTED');
+  // TEMPORARY: Force all current businesses to have the premium Jhustify Badge
+  const showBlueBadge = true; // Was: isFormal || business.trustBadgeType === 'FORMAL' || business.trustBadgeType === 'VERIFIED';
+  const showGreenBadge = false; // Disable green badge when forcing blue badge
 
   return (
     <div className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-gray-200 transition-all duration-300 overflow-hidden">
@@ -38,7 +37,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
         <div className="flex items-start gap-4 mb-4">
           {/* Avatar */}
           <div className="relative">
-            <div className="w-14 h-14 rounded-full overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 ring-2 ring-gray-100 group-hover:ring-[#5BB318]/30 transition-all">
+            <div className="w-14 h-14 rounded-full overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 ring-2 ring-gray-100 group-hover:ring-[#a8d59d]/30 transition-all">
               <Image
                 src={business.businessRepresentativePhoto || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80'}
                 alt={business.businessName}
@@ -62,7 +61,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
           {/* Info */}
           <div className="flex-1 min-w-0">
             <Link href={`/business/${businessId}`}>
-              <h3 className="text-base font-bold text-gray-900 group-hover:text-[#5BB318] transition-colors line-clamp-1 mb-1">
+              <h3 className="text-base font-bold text-gray-900 group-hover:text-[#a8d59d] transition-colors line-clamp-1 mb-1">
                 {business.businessName}
               </h3>
             </Link>
@@ -112,7 +111,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
         
         {/* CTA Button */}
         <Link href={`/business/${businessId}`}>
-          <button className="w-full flex items-center justify-center gap-2 py-3 bg-gray-900 hover:bg-[#5BB318] text-white rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer group/btn">
+          <button className="w-full flex items-center justify-center gap-2 py-3 bg-gray-900 hover:bg-[#a8d59d] text-white rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer group/btn">
             <span>View Profile</span>
             <ArrowUpRight size={16} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
           </button>

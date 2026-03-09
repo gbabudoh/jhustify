@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Edit, Trash2, Eye, EyeOff, TrendingUp, MousePointer } from 'lucide-react';
-import Header from '@/components/Header';
+import Image from 'next/image';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -46,31 +46,9 @@ export default function AdminBannersPage() {
     isActive: true,
   });
 
-  useEffect(() => {
-    // Check if user is admin
-    const checkAdmin = () => {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        if (user.role !== 'ADMIN') {
-          toast.error('Access denied. Admin privileges required.');
-          router.push('/');
-          return false;
-        }
-        return true;
-      }
-      router.push('/login');
-      return false;
-    };
-
-    if (checkAdmin()) {
-      fetchBanners();
-    }
-  }, [router]);
-
-  const fetchBanners = async () => {
+  const fetchBanners = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('admin-token');
       const response = await fetch('/api/banners?all=true', {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -83,13 +61,35 @@ export default function AdminBannersPage() {
 
       const data = await response.json();
       setBanners(data.banners || []);
-    } catch (error) {
+    } catch (error: unknown) {
       toast.error('Failed to load banners');
       console.error('Error fetching banners:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    // Check if user is admin
+    const checkAdmin = () => {
+      const userStr = localStorage.getItem('admin-user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+          toast.error('Access denied. Admin privileges required.');
+          router.push('/');
+          return false;
+        }
+        return true;
+      }
+      router.push('/admin/login');
+      return false;
+    };
+
+    if (checkAdmin()) {
+      fetchBanners();
+    }
+  }, [router, fetchBanners, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,7 +106,7 @@ export default function AdminBannersPage() {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('admin-token');
       const url = editingBanner ? `/api/banners/${editingBanner._id}` : '/api/banners';
       const method = editingBanner ? 'PATCH' : 'POST';
 
@@ -129,8 +129,9 @@ export default function AdminBannersPage() {
       setShowModal(false);
       resetForm();
       fetchBanners();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to save banner');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to save banner';
+      toast.error(message);
       console.error('Error saving banner:', error);
     }
   };
@@ -155,7 +156,7 @@ export default function AdminBannersPage() {
     if (!confirm('Are you sure you want to delete this banner?')) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('admin-token');
       const response = await fetch(`/api/banners/${bannerId}`, {
         method: 'DELETE',
         headers: {
@@ -169,7 +170,7 @@ export default function AdminBannersPage() {
 
       toast.success('Banner deleted successfully');
       fetchBanners();
-    } catch (error) {
+    } catch (error: unknown) {
       toast.error('Failed to delete banner');
       console.error('Error deleting banner:', error);
     }
@@ -177,7 +178,7 @@ export default function AdminBannersPage() {
 
   const toggleActive = async (banner: Banner) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('admin-token');
       const response = await fetch(`/api/banners/${banner._id}`, {
         method: 'PATCH',
         headers: {
@@ -193,7 +194,7 @@ export default function AdminBannersPage() {
 
       toast.success(`Banner ${!banner.isActive ? 'activated' : 'deactivated'} successfully`);
       fetchBanners();
-    } catch (error) {
+    } catch (error: unknown) {
       toast.error('Failed to update banner');
       console.error('Error updating banner:', error);
     }
@@ -233,14 +234,13 @@ export default function AdminBannersPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
-      <Header />
       <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-[#465362] mb-2">Banner Management</h1>
+              <h1 className="text-3xl font-bold text-[#6d6e6b] mb-2">Banner Management</h1>
               <p className="text-gray-600">Create and manage homepage banners</p>
             </div>
             <Button
@@ -257,7 +257,7 @@ export default function AdminBannersPage() {
 
           {loading ? (
             <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#465362]"></div>
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#6d6e6b]"></div>
             </div>
           ) : banners.length === 0 ? (
             <Card>
@@ -280,11 +280,14 @@ export default function AdminBannersPage() {
               {banners.map((banner) => (
                 <Card key={banner._id} hover>
                   <div className="relative mb-4">
-                    <img
-                      src={banner.imageUrl}
-                      alt={banner.title}
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
+                    <div className="relative w-full h-48 rounded-lg overflow-hidden">
+                      <Image
+                        src={banner.imageUrl}
+                        alt={banner.title}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
                     <div className="absolute top-2 right-2">
                       {isCurrentlyActive(banner) ? (
                         <span className="px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full">
@@ -302,7 +305,7 @@ export default function AdminBannersPage() {
                     </div>
                   </div>
 
-                  <h3 className="text-lg font-semibold text-[#465362] mb-2">{banner.title}</h3>
+                  <h3 className="text-lg font-semibold text-[#6d6e6b] mb-2">{banner.title}</h3>
                   <div className="space-y-2 mb-4">
                     <p className="text-sm text-gray-600">
                       <span className="font-medium">Position:</span> {getPositionLabel(banner.position)}
@@ -360,7 +363,7 @@ export default function AdminBannersPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <Card className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-[#465362] mb-6">
+            <h2 className="text-2xl font-bold text-[#6d6e6b] mb-6">
               {editingBanner ? 'Edit Banner' : 'Create New Banner'}
             </h2>
 
@@ -377,7 +380,7 @@ export default function AdminBannersPage() {
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-lg border border-[#D6D9DD] focus:border-[#465362] focus:ring-2 focus:ring-[#C2EABD]"
+                  className="w-full px-4 py-2.5 rounded-lg border border-[#D6D9DD] focus:border-[#6d6e6b] focus:ring-2 focus:ring-[#d3f5ce]"
                   rows={3}
                 />
               </div>
@@ -443,7 +446,7 @@ export default function AdminBannersPage() {
                   id="isActive"
                   checked={formData.isActive}
                   onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="w-4 h-4 text-[#465362] border-gray-300 rounded focus:ring-[#465362]"
+                  className="w-4 h-4 text-[#6d6e6b] border-gray-300 rounded focus:ring-[#6d6e6b]"
                 />
                 <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
                   Active
