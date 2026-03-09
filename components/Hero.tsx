@@ -114,7 +114,7 @@ export default function Hero() {
               onClick={() => router.push('/search')}
               className="w-full sm:w-auto px-6 py-3 md:py-2.5 bg-gray-100 text-gray-700 font-medium rounded-full md:rounded-xl hover:bg-gray-200 transition-colors"
             >
-              Find a Trusted Service
+              Find trusted businesses in Africa
             </button>
           </div>
         </motion.div>
