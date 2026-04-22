@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Search, User, LogOut, UserCircle, LayoutDashboard, ShieldCheck, ChevronDown, Bell, Settings, Home, TrendingUp, MessageSquare, CheckCircle } from 'lucide-react';
+import { Search, User, LogOut, UserCircle, LayoutDashboard, ShieldCheck, ChevronDown, Bell, Settings, Home, TrendingUp, MessageSquare, CheckCircle, HelpCircle } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from './ui/Button';
@@ -124,6 +124,7 @@ export default function Header() {
   const navLinks = [
     { name: 'Home', path: '/', icon: Home, show: true },
     { name: 'Search Businesses', path: '/search', icon: Search, show: true },
+    { name: 'How it Works', path: '/how-it-works', icon: HelpCircle, show: true },
     { name: 'Get Verified', path: '/verify', icon: ShieldCheck, show: isLoggedIn && userRole === 'BUSINESS_OWNER' },
     { name: 'Dashboard', path: getDashboardPath(), icon: LayoutDashboard, show: isLoggedIn },
     { name: 'Messages', path: '/messages', icon: MessageSquare, show: isLoggedIn }

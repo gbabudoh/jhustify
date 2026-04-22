@@ -385,11 +385,17 @@ export default function BusinessDashboardPage() {
                               <span className="text-sm truncate">{business.city}, {business.country}</span>
                             </div>
 
-                            <div className="mt-auto grid grid-cols-3 gap-2 pt-6 border-t border-gray-100">
+                            <div className="mt-auto grid grid-cols-2 md:grid-cols-4 gap-2 pt-6 border-t border-gray-100">
                               <Button variant="outline" className="h-10 rounded-xl border-gray-100 bg-gray-50/50 text-[#465362] hover:bg-[#465362] hover:text-white hover:border-[#465362] transition-all text-[10px] font-black uppercase tracking-tight group/manage p-0" asChild>
                                 <Link href={`/dashboard/business/${business.id}/edit`} className="flex flex-col items-center justify-center gap-1 w-full">
                                   <Settings size={14} className="group-hover/manage:rotate-90 transition-transform duration-500" />
                                   <span>Manage</span>
+                                </Link>
+                              </Button>
+                              <Button variant="outline" className="h-10 rounded-xl border-gray-100 text-blue-600 bg-blue-50/50 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all text-[10px] font-black uppercase tracking-tight group/stats p-0" asChild>
+                                <Link href={`/user/business/analytics/${business.id}`} className="flex flex-col items-center justify-center gap-1 w-full">
+                                  <TrendingUp size={14} />
+                                  <span>Stats</span>
                                 </Link>
                               </Button>
                               <Button variant="outline" className="h-10 rounded-xl border-gray-100 text-emerald-600 bg-emerald-50/50 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all text-[10px] font-black uppercase tracking-tight group/view p-0" asChild>

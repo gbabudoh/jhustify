@@ -36,7 +36,15 @@ class EmailService {
         const nodemailer = await import('nodemailer');
 
         // Configure transporter with optional auth (for VPS/localhost)
-        const transporterConfig: any = {
+        const transporterConfig: {
+          host: string;
+          port: number;
+          secure: boolean;
+          auth?: {
+            user: string;
+            pass: string;
+          };
+        } = {
           host: this.smtpHost,
           port: this.smtpPort,
           secure: this.smtpPort === 465,
@@ -62,9 +70,10 @@ class EmailService {
 
         console.log('Email sent via SMTP:', info.messageId);
         return { success: true };
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('SMTP email send error:', error);
-        return { success: false, error: error.message };
+        const errorMessage = error instanceof Error ? error.message : 'Unknown SMTP error';
+        return { success: false, error: errorMessage };
       }
     }
 
@@ -107,9 +116,10 @@ class EmailService {
         }
 
         return { success: true };
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Resend API error:', error);
-        return { success: false, error: error.message };
+        const errorMessage = error instanceof Error ? error.message : 'Unknown Resend API error';
+        return { success: false, error: errorMessage };
       }
     }
 

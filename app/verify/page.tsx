@@ -29,6 +29,7 @@ export default function VerifyPage() {
     facebook: '',
     linkedin: '',
     whatsapp: '',
+    identityDocumentType: '' as import('@prisma/client').IdentityDocType | '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -198,6 +199,30 @@ export default function VerifyPage() {
         registrationDocUrl = docData.url;
       }
 
+      // Upload national ID if provided
+      let nationalIdUrl = null;
+      if (selectedFiles.nationalId) {
+        const idFormData = new FormData();
+        idFormData.append('file', selectedFiles.nationalId);
+        idFormData.append('fileType', 'national-id');
+
+        const idUploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: idFormData,
+        });
+
+        const idData = await idUploadResponse.json();
+        if (!idUploadResponse.ok) {
+          setError(idData.error || 'Failed to upload identity document');
+          setLoading(false);
+          return;
+        }
+        nationalIdUrl = idData.url;
+      }
+
       // Create business with photo URL
       const businessResponse = await fetch('/api/business', {
         method: 'POST',
@@ -225,8 +250,8 @@ export default function VerifyPage() {
         return;
       }
 
-      // If formal business with registration doc, create verification record
-      if (formData.classification === 'REGISTERED' && registrationDocUrl) {
+      // If formal business OR national ID provided, create/update verification record
+      if (registrationDocUrl || nationalIdUrl) {
         const verificationResponse = await fetch('/api/verification/documents', {
           method: 'POST',
           headers: {
@@ -235,19 +260,17 @@ export default function VerifyPage() {
           },
           body: JSON.stringify({
             businessId: businessData.business.id,
-            businessName: formData.businessName,
             classification: formData.classification,
-            contactPersonName: formData.contactPersonName,
             registrationDocSecureLink: registrationDocUrl,
-            nationalIdSecureLink: null, // Optional for basic listing
-            geoAddress: formData.physicalAddress,
+            nationalIdSecureLink: nationalIdUrl,
+            identityDocumentType: formData.identityDocumentType || null,
             geoCoordinates: null, // Can be added later
           }),
         });
 
         if (!verificationResponse.ok) {
-          console.error('Failed to create verification record');
-          // Don't fail the whole process, just log it
+          const vError = await verificationResponse.json();
+          console.error('Failed to create verification record:', vError.error);
         }
       }
 
@@ -759,6 +782,23 @@ export default function VerifyPage() {
                             required
                           />
                         </div>
+                      </div>
+
+                      {/* Identity Document Type */}
+                      <div className="space-y-3">
+                        <label className="text-xs font-bold text-[#6d6e6b] ml-1 uppercase tracking-widest opacity-70">
+                          Type of Identity Token
+                        </label>
+                        <select
+                          value={formData.identityDocumentType}
+                          onChange={(e) => setFormData({ ...formData, identityDocumentType: e.target.value as import('@prisma/client').IdentityDocType })}
+                          className="w-full bg-gray-50/50 border border-gray-100 focus:bg-white focus:border-[#6d6e6b] transition-all duration-300 rounded-2xl py-3.5 px-4 outline-none text-[#6d6e6b] font-medium appearance-none ring-0 focus:ring-4 focus:ring-[#6d6e6b]/5"
+                        >
+                          <option value="">Select ID Type</option>
+                          <option value="NIN">NIN (National ID)</option>
+                          <option value="PASSPORT">International Passport</option>
+                          <option value="DRIVING_LICENSE">Driver&apos;s License</option>
+                        </select>
                       </div>
 
                       {/* Optional National ID */}

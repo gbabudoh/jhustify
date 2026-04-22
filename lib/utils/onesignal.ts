@@ -78,11 +78,12 @@ class OneSignalService {
         success: true,
         messageId: data.id,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('OneSignal SMS error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send SMS';
       return {
         success: false,
-        error: error.message || 'Failed to send SMS',
+        error: errorMessage,
       };
     }
   }

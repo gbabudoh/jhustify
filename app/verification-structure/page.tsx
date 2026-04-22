@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Shield, CheckCircle, TrendingUp, MessageSquare, DollarSign, Eye, Lock, Award, Users } from 'lucide-react';
+import { Shield, CheckCircle, TrendingUp, MessageSquare, DollarSign, Eye, Lock, Award } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Card from '@/components/ui/Card';
@@ -29,7 +29,7 @@ export default function VerificationStructure() {
               Verification Structure
             </h1>
             <p className="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed">
-              Building Africa's Gold Standard for business trust and verification
+              Building Africa&apos;s Gold Standard for business trust and verification
             </p>
           </motion.div>
         </div>
@@ -49,7 +49,7 @@ export default function VerificationStructure() {
               Features That Transform Businesses
             </h2>
             <p className="text-lg text-gray-600">
-              Each feature solves critical business challenges in Africa's informal economy
+              Each feature solves critical business challenges in Africa&apos;s informal economy
             </p>
           </motion.div>
 
@@ -150,7 +150,7 @@ export default function VerificationStructure() {
                 Gold Standard Verification Requirements
               </h2>
               <p className="text-lg text-gray-600">
-                Our verification system aligns with Africa's highest standards of identity management
+                Our verification system aligns with Africa&apos;s highest standards of identity management
               </p>
             </motion.div>
 
@@ -167,7 +167,7 @@ export default function VerificationStructure() {
                         <div>
                           <h4 className="font-semibold text-[#6d6e6b] mb-2">Proof of Presence</h4>
                           <p className="text-gray-600">
-                            A photo of the business owner or physical storefront acts as "visual proof" that the business isn't a ghost entity.
+                            A photo of the business owner or physical storefront acts as &quot;visual proof&quot; that the business isn&apos;t a ghost entity.
                           </p>
                         </div>
                       </div>
@@ -218,7 +218,7 @@ export default function VerificationStructure() {
                         <div>
                           <h4 className="font-semibold text-[#6d6e6b] mb-2">Financial Readiness</h4>
                           <p className="text-gray-600">
-                            NIN linked to SIM cards and bank accounts means verified users are "pre-vetted" for future financial services like micro-loans.
+                            NIN linked to SIM cards and bank accounts means verified users are &quot;pre-vetted&quot; for future financial services like micro-loans.
                           </p>
                         </div>
                       </div>
@@ -263,22 +263,22 @@ export default function VerificationStructure() {
                   <tr className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 font-medium text-[#6d6e6b]">Passport/License</td>
                     <td className="px-6 py-4 text-gray-600">Legal identity</td>
-                    <td className="px-6 py-4 text-gray-600">"I know who to hold accountable if things go wrong."</td>
+                    <td className="px-6 py-4 text-gray-600">&quot;I know who to hold accountable if things go wrong.&quot;</td>
                   </tr>
                   <tr className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 font-medium text-[#6d6e6b]">Mobile Number</td>
                     <td className="px-6 py-4 text-gray-600">Direct line of contact</td>
-                    <td className="px-6 py-4 text-gray-600">"I can reach them instantly via the Jhustify tool."</td>
+                    <td className="px-6 py-4 text-gray-600">&quot;I can reach them instantly via the Jhustify tool.&quot;</td>
                   </tr>
                   <tr className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 font-medium text-[#6d6e6b]">Photo</td>
                     <td className="px-6 py-4 text-gray-600">Physical existence</td>
-                    <td className="px-6 py-4 text-gray-600">"This is a real human, not just a digital bot."</td>
+                    <td className="px-6 py-4 text-gray-600">&quot;This is a real human, not just a digital bot.&quot;</td>
                   </tr>
                   <tr className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 font-medium text-[#6d6e6b]">NIN (Nigeria)</td>
                     <td className="px-6 py-4 text-gray-600">Government-backed ID</td>
-                    <td className="px-6 py-4 text-gray-600">"This person is officially recognized by the state."</td>
+                    <td className="px-6 py-4 text-gray-600">&quot;This person is officially recognized by the state.&quot;</td>
                   </tr>
                 </tbody>
               </table>
@@ -314,7 +314,7 @@ export default function VerificationStructure() {
                   </div>
                   <h3 className="text-xl font-semibold text-[#6d6e6b] mb-2">Selfie-to-ID Matching</h3>
                   <p className="text-gray-600">
-                    Implement a simple "Liveness Check" where users take a selfie to prevent someone from using a stolen ID card.
+                    Implement a simple &quot;Liveness Check&quot; where users take a selfie to prevent someone from using a stolen ID card.
                   </p>
                 </div>
               </Card>
@@ -326,7 +326,7 @@ export default function VerificationStructure() {
                   </div>
                   <h3 className="text-xl font-semibold text-[#6d6e6b] mb-2">Tiered Trust</h3>
                   <p className="text-gray-600">
-                    Offer a "Basic" badge for phone/photo verification and a "Gold" badge for those who complete the full NIN/Government ID check.
+                    Offer a &quot;Basic&quot; badge for phone/photo verification and a &quot;Gold&quot; badge for those who complete the full NIN/Government ID check.
                   </p>
                 </div>
               </Card>

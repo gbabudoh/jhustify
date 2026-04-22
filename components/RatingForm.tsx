@@ -67,8 +67,9 @@ export default function RatingForm({
       if (onSuccess) {
         onSuccess();
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to submit rating');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to submit rating';
+      setError(errorMessage);
     } finally {
       setSubmitting(false);
     }

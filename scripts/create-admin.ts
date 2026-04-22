@@ -1,5 +1,5 @@
-import connectDB from '../lib/db';
-import User from '../lib/models/User';
+import prisma from '../lib/prisma';
+import bcrypt from 'bcryptjs';
 import readline from 'readline';
 
 const rl = readline.createInterface({
@@ -31,20 +31,28 @@ async function createAdmin() {
       process.exit(1);
     }
 
-    await connectDB();
-    console.log('\nConnected to database...');
+    console.log('\nChecking database...');
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() }
+    });
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
     if (existingUser) {
       console.log(`\nUser with email ${email} already exists.`);
       const update = await question('Do you want to update this user to ADMIN role? (y/n): ');
       if (update.toLowerCase() === 'y') {
-        existingUser.role = 'ADMIN';
-        if (password) {
-          existingUser.password = password; // Will be hashed by pre-save hook
-        }
-        await existingUser.save();
+        await prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            role: 'ADMIN',
+            password: hashedPassword,
+            name // Update name too if provided
+          }
+        });
         console.log('\n✓ User updated to ADMIN role successfully!');
         console.log(`\nAdmin Login Credentials:`);
         console.log(`Email: ${email}`);
@@ -60,11 +68,13 @@ async function createAdmin() {
     }
 
     // Create new admin user
-    const admin = await User.create({
-      email,
-      password,
-      name,
-      role: 'ADMIN',
+    await prisma.user.create({
+      data: {
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        name,
+        role: 'ADMIN',
+      },
     });
 
     console.log('\n✓ Admin user created successfully!');
@@ -75,12 +85,14 @@ async function createAdmin() {
     
     rl.close();
     process.exit(0);
-  } catch (error: any) {
-    console.error('\n✗ Error creating admin user:', error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('\n✗ Error creating admin user:', errorMessage);
     rl.close();
     process.exit(1);
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
 createAdmin();
-

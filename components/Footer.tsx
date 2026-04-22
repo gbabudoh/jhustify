@@ -15,7 +15,7 @@ export default function Footer() {
               <span className="text-lg font-bold text-[#6d6e6b]">Jhustify</span>
             </div>
             <p className="text-sm text-gray-600">
-              Mapping Africa's Trust Economy
+              Mapping Africa&apos;s Trust Economy
             </p>
           </div>
           
@@ -32,6 +32,7 @@ export default function Footer() {
             <h3 className="font-semibold text-[#6d6e6b] mb-3">For Customers</h3>
             <ul className="space-y-2 text-sm text-gray-600">
               <li><Link href="/search" className="hover:text-[#6d6e6b]">Search Businesses</Link></li>
+              <li><Link href="/how-it-works" className="hover:text-[#6d6e6b]">How it Works</Link></li>
               <li><Link href="/about" className="hover:text-[#6d6e6b]">About</Link></li>
               <li><Link href="/contact" className="hover:text-[#6d6e6b]">Contact</Link></li>
             </ul>

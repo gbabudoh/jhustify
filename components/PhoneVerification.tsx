@@ -76,8 +76,9 @@ export default function PhoneVerification({
       if (data.code && process.env.NODE_ENV === 'development') {
         setError(`Development mode: Your code is ${data.code}`);
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to send verification code');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send verification code';
+      setError(errorMessage);
     } finally {
       setSendingCode(false);
     }
@@ -127,8 +128,9 @@ export default function PhoneVerification({
           onVerified();
         }, 1000);
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to verify code');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to verify code';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -156,7 +158,7 @@ export default function PhoneVerification({
           <h3 className="text-lg font-semibold text-[#6d6e6b]">Verify Phone Number</h3>
         </div>
         <p className="text-sm text-gray-600">
-          We'll send a verification code to <span className="font-medium">{phoneNumber}</span>
+          We&apos;ll send a verification code to <span className="font-medium">{phoneNumber}</span>
         </p>
       </div>
 
@@ -195,7 +197,7 @@ export default function PhoneVerification({
 
           <div className="flex items-center justify-between text-sm">
             <p className="text-gray-600">
-              Didn't receive code?{' '}
+              Didn&apos;t receive code?{' '}
               {countdown > 0 ? (
                 <span className="text-gray-400">Resend in {countdown}s</span>
               ) : (
